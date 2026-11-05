@@ -1,0 +1,12 @@
+[build]
+  publish = "site"
+  command = "echo ready"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

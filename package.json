@@ -1,0 +1,8 @@
+{
+  "name": "art-ambassadors-gallery",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "latest"
+  }
+}

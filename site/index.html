@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>المعرض الفني الافتراضي</title>
+<style>
+@font-face{font-family:'Noto Naskh Arabic';src:url('fonts/NotoNaskhArabic-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Noto Naskh Arabic';src:url('fonts/NotoNaskhArabic-Medium.ttf') format('truetype');font-weight:500;font-display:swap}
+@font-face{font-family:'Noto Naskh Arabic';src:url('fonts/NotoNaskhArabic-Bold.ttf') format('truetype');font-weight:600 900;font-display:swap}
+:root{--gold:#d6b37c;--gold2:#f0d9a8;--ink:#f4efe6;--muted:#b9b2a6;--glass:rgba(18,18,22,.66);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b0b0e;color:var(--ink);font-family:'Noto Naskh Arabic',system-ui,serif}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+button{font-family:inherit;color:inherit}
+.glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line)}
+.hidden{display:none!important}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* top bar */
+#top{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;left:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;z-index:5}
+#top>*{pointer-events:auto}
+#brand{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:999px;max-width:52vw}
+#brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+#brand b{font-family:'Noto Naskh Arabic';font-weight:700;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#visitors{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:13px;color:var(--gold2);margin-top:6px;width:max-content}
+#visitors svg{width:17px;height:17px}
+.tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
+.ib{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:.2s;position:relative}
+.ib:hover{background:rgba(214,179,124,.22);border-color:rgba(214,179,124,.5)}
+.ib.on{color:var(--gold2);border-color:rgba(214,179,124,.6)}
+.ib .tip{position:absolute;top:48px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12px;background:#000c;padding:3px 8px;border-radius:6px;opacity:0;pointer-events:none;transition:.2s}
+@media (hover:hover){.ib:hover .tip{opacity:1}}
+
+/* bottom */
+#tour{position:fixed;bottom:calc(40px + env(safe-area-inset-bottom));white-space:nowrap;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:5px;border-radius:999px;z-index:5}
+#tour button{border:0;background:transparent;height:40px;padding:0 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700}
+#tour button:hover{background:rgba(255,255,255,.08)}
+#tour #tNext{background:linear-gradient(135deg,#e2c18c,#b98f52);color:#1b140a}
+#tour #tAuto{padding:0 12px;color:var(--gold2)}
+#tour #tAuto.on{background:rgba(214,179,124,.25)}
+#tCount{min-width:56px;text-align:center;font-size:13px;color:var(--muted)}
+#zoom{position:fixed;left:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:5}
+#fab{position:fixed;right:14px;bottom:calc(100px + env(safe-area-inset-bottom));height:52px;padding:0 18px 0 16px;border-radius:999px;border:0;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;background:linear-gradient(135deg,#e2c18c,#b98f52);color:#1b140a;box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:5}
+#fab svg{width:22px;height:22px}
+#joy{position:fixed;left:18px;bottom:calc(100px + env(safe-area-inset-bottom));width:112px;height:112px;border-radius:50%;z-index:5;touch-action:none;display:none}
+#joy .knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(240,217,168,.85);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+@media (pointer:coarse){#joy{display:block}#zoom{top:auto;bottom:calc(222px + env(safe-area-inset-bottom));transform:none}}
+@media (max-width:600px){#tour{bottom:calc(58px + env(safe-area-inset-bottom))}#fab,#joy,#card{bottom:calc(118px + env(safe-area-inset-bottom))}#fab{height:46px;font-size:14px;padding:0 14px}#credit{font-size:11px}#hint{top:calc(112px + env(safe-area-inset-top))}#zoom{bottom:calc(240px + env(safe-area-inset-bottom))}}
+#credit{position:fixed;bottom:0;left:0;right:0;z-index:6;padding:6px 10px calc(6px + env(safe-area-inset-bottom));text-align:center;font-size:12px;line-height:1.5;background:linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,.45));color:#e9dfcd;border-top:1px solid rgba(214,179,124,.25)}
+#credit b{color:var(--gold2)}
+
+/* art card */
+#card{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);width:min(520px,calc(100vw - 24px));border-radius:18px;padding:14px 16px;z-index:7;opacity:0;pointer-events:none;transition:.35s}
+#card.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#card .chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:999px;color:#14100a;font-weight:700}
+#card h3{margin:8px 0 2px;font-family:'Noto Naskh Arabic';font-weight:700;font-size:20px}
+#card .by{color:var(--muted);font-size:14px}
+#card p{margin:8px 0 0;font-size:14px;line-height:1.7;color:#ddd5c8;max-height:90px;overflow:auto}
+#card .acts{display:flex;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:12px;padding:9px 14px;cursor:pointer;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn-gold{background:linear-gradient(135deg,#e2c18c,#b98f52);color:#1b140a;border:0}
+.btn-gold:hover{filter:brightness(1.07);background:linear-gradient(135deg,#e2c18c,#b98f52)}
+.btn svg{width:18px;height:18px}
+#card .x{position:absolute;top:10px;left:10px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.08);cursor:pointer;display:grid;place-items:center}
+#card .x svg{width:16px;height:16px}
+
+/* hint */
+#hint{position:fixed;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:14px;font-size:13px;z-index:6;transition:opacity .6s;width:max-content;max-width:92vw;text-align:center;line-height:1.6;pointer-events:none}
+
+/* splash */
+#splash{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(10,10,12,.35),rgba(6,6,8,.88) 70%);transition:opacity .9s}
+#splash .box{text-align:center;padding:28px 24px;max-width:640px}
+#splash .org{font-size:clamp(22px,4.6vw,34px);font-weight:700;color:var(--gold2);margin-bottom:14px;text-shadow:0 2px 20px rgba(0,0,0,.7)}
+#splash .kick{letter-spacing:.2em;font-size:13px;color:var(--gold);margin-bottom:12px}
+#splash h1{font-family:'Noto Naskh Arabic';font-weight:700;font-size:clamp(30px,6vw,54px);margin:0;line-height:1.25;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+#splash .sub{margin-top:10px;font-size:clamp(15px,2.6vw,19px);color:#e6dccb}
+#splash .rule{width:90px;height:2px;margin:22px auto;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+#enter{font-size:18px;padding:15px 30px;border-radius:999px;box-shadow:0 12px 40px rgba(214,179,124,.25)}
+#enter[disabled]{opacity:.55;cursor:wait}
+#splash .meta{margin-top:18px;font-size:13px;color:var(--muted);line-height:1.9}
+#splash .cred{margin-top:22px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);font-size:14px;color:#efe4cf;line-height:1.8}
+#splash .cred b{color:var(--gold2)}
+#cer{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100vw - 24px));border-radius:22px;padding:18px 20px;text-align:center;z-index:12;transition:opacity .5s}
+#cer .k{color:var(--gold);font-size:14px;letter-spacing:.08em}
+#cer h2{margin:6px 0 4px;font-size:22px;line-height:1.5}
+#cer .p{color:#e7cf9e;font-size:16px;line-height:1.7}
+#cer .d{color:var(--muted);font-size:13px;margin-top:2px}
+#cer .acts{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:14px}
+#cer .cut{font-size:18px;padding:13px 26px;border-radius:999px;white-space:nowrap}
+body.cer #tour,body.cer #fab,body.cer #zoom,body.cer #joy{display:none!important}
+#cer .skip{background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;text-decoration:underline}
+#opened{position:fixed;inset:0;display:grid;place-items:center;z-index:13;pointer-events:none;opacity:0;transition:opacity .6s;text-align:center;padding:20px}
+#opened.show{opacity:1}
+#opened .t{font-size:clamp(34px,7vw,64px);font-weight:700;color:#fff3dc;text-shadow:0 0 30px rgba(214,179,124,.8),0 4px 30px rgba(0,0,0,.8)}
+#opened .s{font-size:clamp(16px,3vw,22px);color:#f0d9a8;margin-top:8px;text-shadow:0 2px 16px rgba(0,0,0,.9)}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:15;transition:opacity .25s}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(0,0,0,.55);padding:12px}
+#modal .panel{width:min(760px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:rgba(20,20,25,.94)}
+#modal .head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+#modal .head h2{margin:0;font-family:'Noto Naskh Arabic';font-weight:700;font-size:20px}
+#modal .body{padding:16px 18px;overflow:auto;line-height:1.8}
+.closeb{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.08);cursor:pointer;display:grid;place-items:center}
+.sec-t{font-family:'Noto Naskh Arabic';font-weight:700;color:var(--gold2);font-size:17px;margin:14px 0 6px}
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;padding:0;margin:0;list-style:none}
+.plist li{background:rgba(255,255,255,.05);border-radius:10px;padding:6px 10px;font-size:14px}
+.wlist button{width:100%;text-align:right;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.stars{display:flex;gap:4px;direction:ltr;justify-content:flex-end}
+.stars button{border:0;background:none;font-size:32px;cursor:pointer;color:#5a5650;padding:0 2px;line-height:1}
+.stars button.on{color:#f2c14e}
+input.f,textarea.f,select.f{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:15px}
+textarea.f{resize:vertical;min-height:80px;line-height:1.7}
+label.l{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+.fb-item{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.fb-item .top{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.fb-item .st{color:#f2c14e;letter-spacing:2px}
+.fb-item p{margin:4px 0 0;white-space:pre-wrap}
+.summary{display:flex;align-items:center;gap:14px;padding:12px;border-radius:14px;background:rgba(214,179,124,.08);border:1px solid rgba(214,179,124,.25)}
+.summary .big{font-size:36px;font-weight:800;color:var(--gold2)}
+.note{font-size:13px;color:var(--muted)}
+.err{color:#ff9b8a;font-size:14px}
+.ok{color:#9be3b0;font-size:14px}
+
+/* editor */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:700}
+.tabs button.on{background:var(--gold);color:#1b140a;border-color:var(--gold)}
+.wing{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px;background:rgba(255,255,255,.03)}
+.wing-h{display:flex;gap:6px;align-items:center}
+.wing-h input{flex:1}
+.mini{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;display:grid;place-items:center;flex:none}
+.mini:hover{background:rgba(255,255,255,.12)}
+.mini svg{width:16px;height:16px}
+.works{display:grid;gap:8px;margin-top:10px}
+.work{display:grid;grid-template-columns:86px 1fr auto;gap:10px;align-items:start;background:rgba(0,0,0,.25);border-radius:12px;padding:8px}
+.work .th{width:86px;height:86px;border-radius:8px;object-fit:cover;background:#222}
+.work .fs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.work .fs input,.work .fs textarea{font-size:13px;padding:6px 8px}
+.work .fs textarea{grid-column:1/-1;min-height:44px}
+.work .ctl{display:flex;flex-direction:column;gap:4px}
+.upl{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-top:1px solid var(--line)}
+@media (max-width:560px){.work{grid-template-columns:64px 1fr}.work .th{width:64px;height:64px}.work .ctl{grid-column:1/-1;flex-direction:row}.work .fs{grid-template-columns:1fr}}
+
+/* lightbox */
+#lb{position:fixed;inset:0;z-index:40;background:rgba(5,5,7,.96);display:flex;flex-direction:column}
+#lbStage{flex:1;position:relative;overflow:hidden;touch-action:none;display:grid;place-items:center;cursor:zoom-in}
+#lbStage>*{max-width:94vw;max-height:calc(100vh - 140px);transform-origin:center center;user-select:none;-webkit-user-drag:none;box-shadow:0 20px 80px rgba(0,0,0,.6)}
+#lbBar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+#lbBar .t b{font-family:'Noto Naskh Arabic';font-weight:700;font-size:17px}
+#lbBar .t span{display:block;font-size:13px;color:var(--muted)}
+#lbBar .c{display:flex;gap:6px}
+#lbClose{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:2}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="fade"></div>
+
+<div id="top">
+  <div>
+    <div id="brand" class="glass"><span class="dot"></span><b id="brandT">المعرض الفني الافتراضي</b></div>
+    <div id="visitors" class="glass hidden"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span id="vCount">—</span></div>
+  </div>
+  <div class="tools">
+    <button class="ib glass" id="bInfo"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.1"/></svg><span class="tip">عن المعرض</span></button>
+    <button class="ib glass" id="bWings"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="tip">الأجنحة</span></button>
+    <button class="ib glass" id="bMap"><svg class="i" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg><span class="tip">منظر علوي</span></button>
+    <button class="ib glass" id="bMusic"><svg class="i" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span class="tip">الموسيقى</span></button>
+    <button class="ib glass" id="bFull"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="tip">ملء الشاشة</span></button>
+    <button class="ib glass hidden" id="bEdit"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg><span class="tip">تحرير المعرض</span></button>
+  </div>
+</div>
+
+<div id="hint" class="glass" style="opacity:0"></div>
+
+<div id="zoom">
+  <button class="ib glass" id="zIn" title="تكبير"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button class="ib glass" id="zOut" title="تصغير"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+</div>
+
+<div id="tour" class="glass">
+  <button id="tAuto" title="جولة تلقائية"><svg class="i" viewBox="0 0 24 24" id="tAutoI"><path d="M7 5l12 7-12 7z"/></svg><span id="tAutoL">تلقائي</span></button>
+  <button id="tPrev"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>السابق</button>
+  <span id="tCount">—</span>
+  <button id="tNext">ابدأ الجولة<svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+</div>
+
+<button id="fab"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>رأيك في المعرض</button>
+<div id="joy" class="glass"><div class="knob"></div></div>
+
+<div id="card" class="glass">
+  <button class="x" id="cardX"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <span class="chip" id="cChip"></span>
+  <h3 id="cTitle"></h3>
+  <div class="by" id="cBy"></div>
+  <p id="cDesc"></p>
+  <div class="acts">
+    <button class="btn btn-gold" id="cZoom"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M11 8v6M8 11h6"/></svg><span>تكبير العمل</span></button>
+    <button class="btn" id="cNext">العمل التالي<svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+  </div>
+</div>
+
+<div id="credit">إعداد وإنشاء المعرض: <b>أ. خديجة أحمد المعمري</b> — معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
+
+<div id="splash">
+  <div class="box">
+    <div class="org" id="sOrg">تنظيم وحدة الفنون التشكيلية</div>
+    <div class="kick">معرض فني افتراضي</div>
+    <h1 id="sTitle">المعرض الفني الافتراضي</h1>
+    <div class="sub" id="sSub"></div>
+    <div class="meta" id="sPat" style="margin-top:10px;color:#f3e6c8;font-size:16px"></div>
+    <div class="meta" id="sSup" style="margin-top:8px;color:#e7cf9e;font-size:15px"></div>
+    <div class="rule"></div>
+    <button class="btn btn-gold" id="enter" disabled>جاري تجهيز المعرض…</button>
+    <div class="meta" id="sMeta">🎧 يُفضّل استخدام السماعات · اسحب للنظر حولك · انقر على الأرض للتنقل · انقر على العمل لعرضه</div>
+    <div class="cred">إعداد وإنشاء المعرض: <b>أ. خديجة أحمد المعمري</b><br>معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
+  </div>
+</div>
+
+<div id="modal" class="hidden"><div class="panel glass"><div class="head"><h2 id="mTitle"></h2><button class="closeb" id="mClose"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="body" id="mBody"></div><div class="foot hidden" id="mFoot"></div></div></div>
+
+<div id="cer" class="glass hidden">
+  <div class="k">حفل تدشين المعرض</div>
+  <h2 id="cerT"></h2>
+  <div class="p" id="cerP"></div>
+  <div class="d" id="cerS" style="color:#e7dccb;font-size:14px"></div>
+  <div class="d" id="cerD"></div>
+  <div class="d" id="cerWait" style="display:none;margin-top:12px;color:#f0d9a8;font-size:15px">⏳ الافتتاح الرسمي قريباً — تُفتح أبواب المعرض لحظة قصّ الشريط في حفل التدشين</div>
+  <div class="d" id="cerAdm" style="display:none;margin-top:8px">عند الضغط على «قصّ الشريط» يُفتتح المعرض لجميع الزوار في نفس اللحظة</div>
+  <div class="acts"><button class="btn btn-gold cut" id="cerCut">✂ قصّ الشريط</button><button class="skip" id="cerSkip">تخطّي</button></div>
+</div>
+<div id="opened"><div><div class="t">تمّ افتتاح المعرض</div><div class="s" id="openedS"></div></div></div>
+<div id="lb" class="hidden">
+  <button class="closeb" id="lbClose"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div id="lbStage"></div>
+  <div id="lbBar"><div class="t"><b id="lbT"></b><span id="lbS"></span></div>
+    <div class="c"><button class="mini" id="lbIn"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button class="mini" id="lbOut"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><button class="mini" id="lbReset"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M20 9V4h-5M4 15v5h5"/></svg></button></div></div>
+</div>
+
+<script>window.__NETLIFY__=1</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ============ utils ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rid = () => Math.random().toString(36).slice(2,10);
+const arNum = n => Number(n).toLocaleString('ar-OM');
+function rng(seed){ let s = (seed*2654435761)>>>0 || 1; return () => { s ^= s<<13; s>>>=0; s ^= s>>>17; s ^= s<<5; s>>>=0; return (s%1000003)/1000003; }; }
+const TAU = Math.PI*2;
+const angDiff = (a,b) => { let d = (b-a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
+const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+const NET = !!window.__NETLIFY__;
+const mediaUrl = (id, kind) => NET ? `media/${id}.${kind === 'image' ? 'jpg' : 'mp4'}` : '/_blob/' + id;
+const CREDIT_1 = 'إعداد وإنشاء المعرض: أ. خديجة أحمد المعمري';
+const CREDIT_2 = 'معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)';
+const GOVS = ['مسقط','ظفار','مسندم','البريمي','الداخلية','شمال الباطنة','جنوب الباطنة','جنوب الشرقية','شمال الشرقية','الظاهرة','الوسطى'];
+const ACCENTS = ['#d6b37c','#7fc0b0','#d98f6c','#8fa8dc','#c39ad6','#d8c26c','#8fcf8a','#e08aa3','#6cc3d9','#c9a98a','#a3a3e0'];
+
+const DEFAULT_CFG = {
+  info: {
+    title: 'المعرض الفني الافتراضي',
+    subtitle: 'رحلة فنية عبر محافظات سلطنة عُمان',
+    description: 'أهلاً بكم في معرضنا الافتراضي الذي يضمّ أعمالاً فنية متنوعة من لوحات وأعمال رقمية وفيديو، مقسّمة إلى أجنحة بحسب المحافظات. تجوّلوا بحرية، واقتربوا من كل عمل لمشاهدته بالتفصيل، ولا تنسوا مشاركتنا آراءكم في نهاية الجولة.',
+    dates: 'نوفمبر ٢٠٢٦',
+    organizer: 'مدرسة تبوك للتعليم الأساسي للبنات (٥-١٢)',
+    supervisor: '',
+    patron: '',
+    orgShort: '',
+    openingDate: ''
+  },
+  participants: [],
+  wings: [],
+  music: null
+};
+function normalize(d){
+  const c = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  if (d && typeof d === 'object'){
+    if (d.info) Object.assign(c.info, d.info);
+    c.opening = { opened: !!(d.opening && d.opening.opened), at: Number(d.opening && d.opening.at) || 0 };
+    if (Array.isArray(d.participants)) c.participants = d.participants.map(String).filter(s=>s.trim());
+    if (Array.isArray(d.wings)) c.wings = d.wings.map(w => ({ id: w.id || rid(), name: String(w.name||'جناح'), works: Array.isArray(w.works) ? w.works.filter(x=>x && x.asset).map(x=>({ id:x.id||rid(), kind: x.kind==='video'?'video':'image', asset:String(x.asset), ar: Number(x.ar)||0.8, title:String(x.title||''), artist:String(x.artist||''), school:String(x.school||''), desc:String(x.desc||'') })) : [] }));
+    if (d.music && d.music.asset) c.music = { asset: String(d.music.asset) };
+  }
+  return c;
+}
+function demoWings(){
+  const names = ['شمال الباطنة','مسقط','الداخلية','ظفار'];
+  const ars = [0.8,1.25,1,0.75,1.33,0.85,1.5,1];
+  let k = 0;
+  return names.map((n,i) => ({ id:'demo'+i, name:n, demo:true, works: Array.from({length:4}, (_,j) => {
+    k++; const isVid = (i===0 && j===1) || (i===2 && j===2);
+    return { id:'d'+k, kind: isVid ? 'demovideo' : 'demo', seed:k*7+i, ar: isVid ? 16/9 : ars[(k)%ars.length], title: (isVid?'فيديو فني تجريبي ':'عمل فني تجريبي ')+arNum(k), artist:'اسم الطالبة', school:'اسم المدرسة', desc:'هذا عمل تجريبي يوضّح شكل المعرض. يمكن استبداله بأعمال حقيقية من زر «تحرير المعرض».' };
+  })}));
+}
+let cfg = normalize(null);
+const effWings = () => cfg.wings.length ? cfg.wings : demoWings();
+
+/* ============ renderer ============ */
+const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+$('#stage').appendChild(renderer.domElement);
+const MAXANI = renderer.capabilities.getMaxAnisotropy();
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a0d);
+scene.fog = new THREE.Fog(0x0a0a0d, 38, 110);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.add(new THREE.HemisphereLight(0xfff3e2, 0x3a3027, 0.85));
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.05, 220);
+camera.rotation.order = 'YXZ';
+
+function cTex(cv){ const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MAXANI; return t; }
+function mkCanvas(w,h){ const c = document.createElement('canvas'); c.width=w; c.height=h; return c; }
+
+/* ---- shared textures ---- */
+function floorCanvas(){
+  const c = mkCanvas(1024,1024), g = c.getContext('2d'), r = rng(11), rows = 8, ph = 1024/rows;
+  for (let i=0;i<rows;i++){
+    let x = -r()*500;
+    while (x < 1024){
+      const pw = 320 + r()*360, t = r();
+      g.fillStyle = `rgb(${(160+t*28)|0},${(126+t*22)|0},${(92+t*16)|0})`;
+      g.fillRect(x, i*ph, pw, ph);
+      for (let k=0;k<30;k++){
+        g.strokeStyle = `rgba(70,45,25,${0.03+r()*0.07})`; g.lineWidth = 0.8+r()*1.6; g.beginPath();
+        const yy = i*ph + r()*ph; g.moveTo(x,yy);
+        g.bezierCurveTo(x+pw*.33, yy+(r()-.5)*9, x+pw*.66, yy+(r()-.5)*9, x+pw, yy+(r()-.5)*6); g.stroke();
+      }
+      g.fillStyle='rgba(35,22,12,.6)'; g.fillRect(x, i*ph, 2, ph); x += pw;
+    }
+    g.fillStyle='rgba(35,22,12,.55)'; g.fillRect(0, i*ph, 1024, 2);
+  }
+  return c;
+}
+const floorTex = cTex(floorCanvas()); floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+function washCanvas(){
+  const c = mkCanvas(256,512), g = c.getContext('2d');
+  g.save(); g.translate(128,150); g.scale(1,2.3);
+  const gr = g.createRadialGradient(0,0,0,0,0,128);
+  gr.addColorStop(0,'rgba(255,226,180,0.95)'); gr.addColorStop(.45,'rgba(255,205,150,0.42)'); gr.addColorStop(1,'rgba(255,190,130,0)');
+  g.fillStyle = gr; g.fillRect(-128,-128,256,256); g.restore(); return c;
+}
+const washTex = cTex(washCanvas());
+function poolCanvas(){ const c = mkCanvas(256,256), g = c.getContext('2d'); const gr = g.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,225,185,.9)'); gr.addColorStop(1,'rgba(255,210,160,0)'); g.fillStyle=gr; g.fillRect(0,0,256,256); return c; }
+const poolTex = cTex(poolCanvas());
+
+const M = {
+  wall: new THREE.MeshStandardMaterial({ color:0x2f3036, roughness:.94, envMapIntensity:.55 }),
+  wallLight: new THREE.MeshStandardMaterial({ color:0x3a3a41, roughness:.9, envMapIntensity:.6 }),
+  floor: new THREE.MeshStandardMaterial({ map:floorTex, roughness:.36, metalness:0, envMapIntensity:.75 }),
+  ceil: new THREE.MeshStandardMaterial({ color:0x151519, roughness:1 }),
+  base: new THREE.MeshStandardMaterial({ color:0x0e0e10, roughness:.6 }),
+  frame: new THREE.MeshStandardMaterial({ color:0x111112, roughness:.45, metalness:.25 }),
+  mat: new THREE.MeshBasicMaterial({ color:0xefebe3, toneMapped:false }),
+  fixture: new THREE.MeshStandardMaterial({ color:0x1a1a1c, roughness:.4, metalness:.6 }),
+  strip: new THREE.MeshBasicMaterial({ color:0xfff0d8, toneMapped:false }),
+  bulb: new THREE.MeshBasicMaterial({ color:0xfff4e0, toneMapped:false }),
+  plaza: new THREE.MeshStandardMaterial({ color:0x17171b, roughness:.8 }),
+  wash: new THREE.MeshBasicMaterial({ map:washTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:.5, toneMapped:false }),
+  pool: new THREE.MeshBasicMaterial({ map:poolTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:.16, toneMapped:false })
+};
+
+/* ---- text helpers ---- */
+const FH = '"Noto Naskh Arabic", serif', FB = '"Noto Naskh Arabic", serif';
+function wrap(g, text, maxW){
+  const out = [];
+  for (const para of String(text||'').split('\n')){
+    const words = para.split(/\s+/).filter(Boolean); let line = '';
+    for (const w of words){ const t = line ? line+' '+w : w; if (g.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; }
+    out.push(line);
+  }
+  return out;
+}
+function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function panelBg(g,W,H,accent='#d6b37c'){
+  const gr = g.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#1d1c21'); gr.addColorStop(1,'#121216');
+  g.fillStyle = gr; g.fillRect(0,0,W,H);
+  g.strokeStyle = accent; g.globalAlpha=.85; g.lineWidth = 6; g.strokeRect(22,22,W-44,H-44); g.globalAlpha=.35; g.lineWidth=2; g.strokeRect(40,40,W-80,H-80); g.globalAlpha=1;
+}
+function infoCanvas(){
+  const W=2048,H=1152,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl'; panelBg(g,W,H);
+  const R = W-140; g.textAlign='right'; g.textBaseline='alphabetic';
+  g.fillStyle='#d6b37c'; g.font=`500 46px ${FB}`; g.fillText('عن المعرض', R, 150);
+  let fs = 108; g.font=`700 ${fs}px ${FH}`; while (g.measureText(cfg.info.title).width > W-280 && fs>60){ fs-=4; g.font=`700 ${fs}px ${FH}`; }
+  g.fillStyle='#f6efe2'; g.fillText(cfg.info.title, R, 150+fs+20);
+  let y = 150+fs+20;
+  if (cfg.info.subtitle){ g.font=`500 54px ${FB}`; g.fillStyle='#e7d3ad'; y += 82; g.fillText(cfg.info.subtitle, R, y); }
+  y += 50; g.fillStyle='#d6b37c'; g.fillRect(R-160, y, 160, 5); y += 30;
+  let bs = 46, lines; const maxY = H-260;
+  for(;;){ g.font=`400 ${bs}px ${FB}`; lines = wrap(g, cfg.info.description, W-280); if (y + lines.length*bs*1.65 < maxY || bs<=30) break; bs-=2; }
+  g.fillStyle='#ddd5c8'; for (const ln of lines){ y += bs*1.65; if (y>maxY) break; g.fillText(ln, R, y); }
+  g.font=`500 40px ${FB}`; g.fillStyle='#bfb6a6';
+  const meta = [cfg.info.supervisor, cfg.info.dates].filter(Boolean).join('   •   ');
+  g.fillText(meta, R, H-140);
+  if (cfg.info.organizer){ g.font=`500 36px ${FB}`; let o = cfg.info.organizer; while (g.measureText(o).width > W-280 && o.length>10) o = o.slice(0,-2); g.fillText(o, R, H-196); }
+  g.font=`500 34px ${FB}`; g.fillStyle='#d6b37c'; g.fillText(CREDIT_1 + ' — ' + CREDIT_2, R, H-82);
+  return c;
+}
+function partGroups(list){
+  // "## عنوان" = header line; entries may use " | " to split school / teacher / students
+  const items = [];
+  for (const raw of list){ const t = String(raw).trim(); if (!t) continue; if (t.startsWith('##')) items.push({ h:true, text:t.replace(/^#+\s*/,'') }); else items.push({ h:false, parts:t.split('|').map(x=>x.trim()).filter(Boolean) }); }
+  return items;
+}
+function partCanvas(){
+  const W=2816,H=1248,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl'; panelBg(g,W,H,'#7fc0b0');
+  const R=W-130; g.textAlign='right';
+  g.fillStyle='#7fc0b0'; g.font=`500 44px ${FB}`; g.fillText('المشاركون في المعرض', R, 140);
+  g.fillStyle='#f6efe2'; g.font=`700 82px ${FH}`; g.fillText('سفراء الإبداع ومعلّماتهم', R, 245);
+  let list = cfg.participants.slice();
+  if (!list.length){
+    const st = new Set(); effWings().forEach(w=>w.works.forEach(x=>{ if(x.artist && x.artist!=='اسم الطالبة') st.add(x.artist + (x.school? ' | '+x.school:'')); }));
+    list = [...st];
+  }
+  if (!list.length){ g.font=`400 46px ${FB}`; g.fillStyle='#bfb6a6'; g.fillText('تُضاف أسماء المشاركين من زر «تحرير المعرض».', R, 420); return c; }
+  const items = partGroups(list), top = 310, bottom = H-90, cols = 3, gap = 70, colW = (W-260-gap*(cols-1))/cols;
+  // fit: find largest font where flowed layout fits
+  let fs = 44, plan;
+  for (; fs >= 18; fs -= 2){
+    const lh = fs*1.42; plan = []; let col = 0, y = top;
+    const place = (h, ln) => { if (y + h > bottom){ col++; y = top; } ln.col = col; ln.y = y; plan.push(ln); y += h; };
+    for (const it of items){
+      if (it.h){ g.font = `700 ${fs*1.15}px ${FH}`; const ls = wrap(g, it.text, colW); if (y !== top) y += fs*0.6; if (y + lh*1.15*ls.length + lh*2 > bottom){ col++; y = top; } ls.forEach(l => place(lh*1.15, { kind:'h', text:l })); y += fs*0.15; }
+      else { it.parts.forEach((pt, k) => { g.font = `${k===0?700:400} ${fs}px ${FB}`; wrap(g, pt, colW-40).forEach((l,j) => place(lh, { kind: k===0?'s':'n', text:l, bullet: k===0 && j===0, indent: k>0 })); }); y += fs*0.35; }
+    }
+    if (col < cols) break;
+  }
+  for (const ln of plan){
+    const x = R - ln.col*(colW+gap);
+    if (ln.kind==='h'){ g.font=`700 ${fs*1.15}px ${FH}`; g.fillStyle='#e7cf9e'; g.fillText(ln.text, x, ln.y + fs*1.1); }
+    else { g.font=`${ln.kind==='s'?700:400} ${fs}px ${FB}`; g.fillStyle = ln.kind==='s' ? '#f3ece0' : '#c9c1b3';
+      if (ln.bullet){ g.fillStyle='#7fc0b0'; g.beginPath(); g.arc(x-8, ln.y+fs*0.7, fs*0.15, 0, TAU); g.fill(); g.fillStyle='#f3ece0'; }
+      g.fillText(ln.text, x - (ln.indent?40:34), ln.y + fs); }
+  }
+  return c;
+}
+function signCanvas(name, idx, accent, kicker, plain){
+  const W=1400,H=380,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  g.fillStyle='#141417'; rr(g,0,0,W,H,26); g.fill();
+  g.fillStyle=accent; g.fillRect(0,0,W,14);
+  g.textAlign='center'; g.fillStyle=accent; g.font=`500 54px ${FB}`; g.fillText(kicker || `الجناح ${arNum(idx+1)}`, W/2, 112);
+  const full = plain ? name : (name.startsWith('محافظة') ? name : 'محافظة ' + name);
+  let fs = 150; g.font=`700 ${fs}px ${FH}`; while (g.measureText(full).width > W-120 && fs>60){ fs-=6; g.font=`700 ${fs}px ${FH}`; }
+  g.fillStyle='#f6efe2'; g.fillText(full, W/2, 140+fs*0.95);
+  return c;
+}
+function bannerCanvas(name, idx, accent){
+  const W=360,H=1000,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#1a1a1e'); gr.addColorStop(1,'#101013'); g.fillStyle=gr; g.fillRect(0,0,W,H);
+  g.fillStyle=accent; g.fillRect(0,0,W,20); g.fillRect(0,H-8,W,8);
+  g.textAlign='center'; g.fillStyle=accent; g.font=`700 200px ${FH}`; g.fillText(arNum(idx+1), W/2, 300);
+  g.fillStyle='#f0e8da'; g.font=`700 60px ${FH}`; const lines = wrap(g, name, W-50); let y = 450; for (const l of lines.slice(0,5)){ g.fillText(l, W/2, y); y+=86; }
+  g.fillStyle='#a9a196'; g.font=`500 38px ${FB}`; g.fillText('جناح المحافظة', W/2, H-80);
+  return c;
+}
+function plaqueCanvas(w, accent){
+  const W=720,H=260,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  g.fillStyle='#f3efe7'; g.fillRect(0,0,W,H); g.fillStyle=accent; g.fillRect(W-12,0,12,H);
+  g.textAlign='right'; const R = W-44;
+  g.fillStyle='#1d1b18'; let fs=56; g.font=`700 ${fs}px ${FH}`; let t = w.title||'بدون عنوان'; while (g.measureText(t).width>W-80 && fs>32){ fs-=2; g.font=`700 ${fs}px ${FH}`; }
+  g.fillText(t, R, 84);
+  const fitLine = (txt, size, weight, color, y) => { let f = size; g.font = `${weight} ${f}px ${FB}`; while (g.measureText(txt).width > W-80 && f > 20){ f -= 2; g.font = `${weight} ${f}px ${FB}`; } g.fillStyle = color; g.fillText(txt, R, y); };
+  fitLine(w.artist||'', 42, 500, '#4a453e', 152);
+  fitLine(w.school||'', 34, 400, '#7a736a', 210);
+  return c;
+}
+function endCanvas(){
+  const W=2048,H=1024,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl'; panelBg(g,W,H);
+  g.textAlign='center'; g.fillStyle='#f6efe2'; g.font=`700 150px ${FH}`; g.fillText('شكراً لزيارتكم', W/2, 330);
+  g.fillStyle='#d6b37c'; g.fillRect(W/2-90, 400, 180, 5);
+  g.fillStyle='#e7dccb'; g.font=`500 64px ${FB}`; g.fillText('شاركونا رأيكم في المعرض', W/2, 540);
+  rr(g, W/2-330, 610, 660, 130, 65); const gr=g.createLinearGradient(W/2-330,0,W/2+330,0); gr.addColorStop(0,'#e2c18c'); gr.addColorStop(1,'#b98f52'); g.fillStyle=gr; g.fill();
+  g.fillStyle='#1b140a'; g.font=`700 58px ${FB}`; g.fillText('اضغطوا هنا لكتابة رأيكم', W/2, 695);
+  g.fillStyle='#bfb6a6'; g.font=`500 38px ${FB}`; g.fillText(CREDIT_1, W/2, 860); g.fillText(CREDIT_2, W/2, 915);
+  return c;
+}
+function facadeCanvas(){
+  const W=2048,H=420,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  g.fillStyle='#0f0f12'; g.fillRect(0,0,W,H); g.textAlign='center';
+  g.fillStyle='#d6b37c'; g.font=`700 54px ${FB}`; g.fillText(cfg.info.orgShort || 'مرحباً بكم في', W/2, 100);
+  let fs=150; g.font=`700 ${fs}px ${FH}`; while (g.measureText(cfg.info.title).width>W-160 && fs>70){ fs-=6; g.font=`700 ${fs}px ${FH}`; }
+  g.fillStyle='#f6efe2'; g.fillText(cfg.info.title, W/2, 120+fs);
+  g.fillStyle='#bfb6a6'; g.font=`500 44px ${FB}`; g.fillText('المدخل', W/2, H-40);
+  return c;
+}
+function arrowCanvas(){
+  const W=512,H=640,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  g.fillStyle='rgba(240,214,160,.95)'; g.beginPath(); g.moveTo(256,30); g.lineTo(460,260); g.lineTo(340,260); g.lineTo(340,420); g.lineTo(172,420); g.lineTo(172,260); g.lineTo(52,260); g.closePath(); g.fill();
+  g.textAlign='center'; g.fillStyle='#fff6e6'; g.font=`700 70px ${FH}`; g.fillText('ابدأ الجولة', 256, 540);
+  return c;
+}
+function floorLabel(text, accent){
+  const W=1400,H=300,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl';
+  g.fillStyle='rgba(10,10,12,.72)'; rr(g,10,10,W-20,H-20,40); g.fill(); g.strokeStyle=accent; g.lineWidth=8; rr(g,10,10,W-20,H-20,40); g.stroke();
+  g.textAlign='center'; g.fillStyle='#fff'; let fs=130; g.font=`700 ${fs}px ${FH}`; while (g.measureText(text).width>W-80 && fs>50){ fs-=6; g.font=`700 ${fs}px ${FH}`; }
+  g.fillText(text, W/2, H/2+fs*0.36); return c;
+}
+
+/* ---- procedural demo art ---- */
+const PALS = [['#1d3557','#457b9d','#a8dadc','#f1faee','#e63946'],['#264653','#2a9d8f','#e9c46a','#f4a261','#e76f51'],['#3d405b','#e07a5f','#f2cc8f','#81b29a','#f4f1de'],['#0b132b','#1c2541','#3a506b','#5bc0be','#f0e6d2'],['#582f0e','#7f4f24','#b08968','#ddb892','#ede0d4'],['#10002b','#5a189a','#9d4edd','#e0aaff','#ffd6a5'],['#03071e','#6a040f','#d00000','#f48c06','#ffba08']];
+function demoArt(seed, ar){
+  const r = rng(seed+3), H = 900, W = Math.round(H*ar), c = mkCanvas(W,H), g = c.getContext('2d');
+  const p = PALS[seed % PALS.length], st = seed % 5;
+  if (st===0){ g.fillStyle=p[0]; g.fillRect(0,0,W,H);
+    const n=3; for(let i=0;i<n;i++){ const y0=H*(.06+i*.31), h=H*.27; for(let k=0;k<26;k++){ g.globalAlpha=.07; g.fillStyle=p[1+(i+seed)%4]; const j=k*1.6; g.fillRect(W*.08+j, y0+j, W*.84-2*j, h-2*j); } }
+    g.globalAlpha=1;
+  } else if (st===1){ g.fillStyle=p[4]; g.fillRect(0,0,W,H);
+    for(let i=0;i<9;i++){ g.globalAlpha=.75; g.fillStyle=p[i%4]; g.beginPath(); g.arc(r()*W, r()*H, 40+r()*Math.min(W,H)*.32, 0, TAU); g.fill(); }
+    g.globalAlpha=.8; g.strokeStyle=p[0]; g.lineWidth=5; for(let i=0;i<5;i++){ g.beginPath(); g.moveTo(r()*W,0); g.lineTo(r()*W,H); g.stroke(); } g.globalAlpha=1;
+  } else if (st===2){ const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,p[3]); gr.addColorStop(1,p[4]); g.fillStyle=gr; g.fillRect(0,0,W,H);
+    g.fillStyle='rgba(255,245,220,.9)'; g.beginPath(); g.arc(W*(.25+r()*.5), H*.32, Math.min(W,H)*.11, 0, TAU); g.fill();
+    for(let L=0;L<4;L++){ g.fillStyle=p[L%3]; g.globalAlpha=.85; g.beginPath(); g.moveTo(0,H); const base=H*(.5+L*.12), amp=30+r()*50, f=1+r()*2, ph=r()*6; for(let x=0;x<=W;x+=8) g.lineTo(x, base+Math.sin(x/W*Math.PI*f+ph)*amp); g.lineTo(W,H); g.closePath(); g.fill(); } g.globalAlpha=1;
+  } else if (st===3){ g.fillStyle=p[0]; g.fillRect(0,0,W,H); const s=W/5;
+    for(let y=-s;y<H+s;y+=s) for(let x=-s;x<W+s;x+=s){ const cx=x+s/2, cy=y+s/2; g.save(); g.translate(cx,cy);
+      for(let k=0;k<2;k++){ g.rotate(Math.PI/4*k); g.fillStyle=p[1+((x/s+y/s+k)|0)%4]; g.globalAlpha=.9; g.fillRect(-s*.32,-s*.32,s*.64,s*.64); }
+      g.globalAlpha=1; g.fillStyle=p[0]; g.beginPath(); g.arc(0,0,s*.14,0,TAU); g.fill(); g.restore(); }
+  } else { g.fillStyle=p[4]; g.fillRect(0,0,W,H);
+    for(let i=0;i<70;i++){ g.strokeStyle=p[i%4]; g.globalAlpha=.25+r()*.5; g.lineWidth=6+r()*34; g.lineCap='round'; g.beginPath(); const x=r()*W,y=r()*H; g.moveTo(x,y); g.quadraticCurveTo(x+(r()-.5)*W*.6, y+(r()-.5)*H*.4, x+(r()-.5)*W*.7, y+(r()-.5)*H*.5); g.stroke(); } g.globalAlpha=1;
+  }
+  for(let i=0;i<5000;i++){ g.fillStyle = r()<.5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)'; g.fillRect(r()*W, r()*H, 2, 2); }
+  return c;
+}
+function demoVideo(seed){
+  const c = mkCanvas(800,450), g = c.getContext('2d'), p = PALS[(seed+2)%PALS.length];
+  const draw = t => {
+    const gr = g.createLinearGradient(0,0,800,450); gr.addColorStop(0,p[0]); gr.addColorStop(1,p[1]); g.fillStyle=gr; g.fillRect(0,0,800,450);
+    for(let i=0;i<7;i++){ const a=t*.35+i*0.9; g.globalAlpha=.55; g.fillStyle=p[2+i%3]; g.beginPath(); g.arc(400+Math.cos(a*1.3)*260, 225+Math.sin(a)*140, 50+30*Math.sin(t+i), 0, TAU); g.fill(); }
+    g.globalAlpha=1; g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(0,410,800,40); g.fillStyle='#fff'; g.fillRect(20,428,(t*40)%760,4);
+  };
+  draw(0); return { canvas:c, draw };
+}
+
+/* ============ world ============ */
+const HW = 6, W = 12, H = 5.2, DOOR = 3.6, DOOR_H = 3.5, S = 4.4, LOBBY = 14, EYE = 1.6;
+let world = null;
+function addBox(G, w,h,d, mat, x,y,z){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.position.set(x,y,z); G.add(m); return m; }
+function addPlane(G, w,h, mat, x,y,z, ry=0, rx=0){ const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat); m.position.set(x,y,z); m.rotation.set(rx,ry,0,'YXZ'); G.add(m); return m; }
+function texMat(canvas){ return new THREE.MeshBasicMaterial({ map:cTex(canvas), toneMapped:false }); }
+function doorWall(G, z, t=0.3){
+  const sideW = HW - DOOR/2 + 0.2;
+  addBox(G, sideW, H, t, M.wall, -(DOOR/2 + sideW/2), H/2, z);
+  addBox(G, sideW, H, t, M.wall,  (DOOR/2 + sideW/2), H/2, z);
+  addBox(G, DOOR, H-DOOR_H, t, M.wall, 0, DOOR_H + (H-DOOR_H)/2, z);
+  addBox(G, DOOR+0.16, 0.12, t+0.04, M.base, 0, DOOR_H, z);
+}
+function disposeWorld(){
+  if (!world) return;
+  world.videos.forEach(v => { try{ v.el.pause(); v.el.removeAttribute('src'); v.el.load(); }catch{} });
+  scene.remove(world.group);
+  world.group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !Object.values(M).includes(o.material)){ if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+  world = null;
+}
+function fitDist(w, h){
+  const vf = THREE.MathUtils.degToRad(62)/2, hf = Math.atan(Math.tan(vf)*camera.aspect);
+  return clamp(Math.max((h*1.3/2)/Math.tan(vf), (w*1.18/2)/Math.tan(hf), 1.9), 1.9, 10.6);
+}
+function openingCanvas(){
+  const W=920,H=600,c=mkCanvas(W,H),g=c.getContext('2d'); g.direction='rtl'; panelBg(g,W,H);
+  g.textAlign='center'; g.fillStyle='#d6b37c'; g.font=`500 40px ${FB}`; g.fillText('تدشين المعرض', W/2, 115);
+  g.fillStyle='#f6efe2'; let fs=56; g.font=`700 ${fs}px ${FH}`; const t = cfg.info.title; while (g.measureText(t).width > W-120 && fs>30){ fs-=2; g.font=`700 ${fs}px ${FH}`; }
+  wrap(g, t, W-100).slice(0,2).forEach((l,i)=>g.fillText(l, W/2, 200+i*fs*1.3));
+  g.fillStyle='#e7cf9e'; g.font=`500 34px ${FB}`; const pl = wrap(g, cfg.info.patron || '', W-100); pl.slice(0,2).forEach((l,i)=>g.fillText(l, W/2, 350+i*46));
+  g.fillStyle='#d8d0c2'; g.font=`400 30px ${FB}`; g.fillText(cfg.info.supervisor || '', W/2, 470);
+  g.fillStyle='#bfb6a6'; g.font=`400 34px ${FB}`; g.fillText(cfg.info.openingDate || cfg.info.dates || '', W/2, H-70);
+  return c;
+}
+let ribbonCut = false, ceremonyOn = false, started = false;
+function setRibbonVisible(r, v){ r.parts && r.parts.forEach(o => o.visible = v); r.hidden = !v; }
+function applyRibbon(r, k, gone){ if (gone){ setRibbonVisible(r, false); return; } if (k <= 0) setRibbonVisible(r, true); const e = ease(clamp(k,0,1)); r.L.rotation.z = -1.45*e; r.R.rotation.z = 1.45*e; r.bow.position.y = 1.25 - 1.2*e; r.bow.rotation.z = 2.5*e; r.bow.visible = e < 0.98; }
+let confetti = null;
+function burstConfetti(){
+  const N = 260, geo = new THREE.PlaneGeometry(0.05, 0.08), mat = new THREE.MeshBasicMaterial({ side:THREE.DoubleSide, toneMapped:false });
+  const mesh = new THREE.InstancedMesh(geo, mat, N); const cols = [0xd6b37c,0xf0d9a8,0xc8102e,0xffffff,0x7fc0b0,0xe08aa3,0x8fa8dc];
+  const parts = []; const col = new THREE.Color();
+  for (let i=0;i<N;i++){ col.setHex(cols[i%cols.length]); mesh.setColorAt(i, col);
+    parts.push({ p:new THREE.Vector3((Math.random()-.5)*0.6, 1.3, 0.8), v:new THREE.Vector3((Math.random()-.5)*4.5, 2.5+Math.random()*4, 0.5+Math.random()*2.5), r:new THREE.Euler(Math.random()*6, Math.random()*6, 0), w:(Math.random()-.5)*12 }); }
+  scene.add(mesh); confetti = { mesh, parts, t:0 };
+}
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(1,1,1);
+function stepConfetti(dt){
+  if (!confetti) return; confetti.t += dt;
+  confetti.parts.forEach((q,i) => { q.v.y -= 4.2*dt; q.v.multiplyScalar(1 - 0.9*dt); if (q.v.y < -1.2) q.v.y = -1.2; q.p.addScaledVector(q.v, dt); if (q.p.y < 0.02){ q.p.y = 0.02; q.v.set(0,0,0); } q.r.x += q.w*dt; q.r.z += q.w*0.7*dt; _q.setFromEuler(q.r); _m4.compose(q.p, _q, _s); confetti.mesh.setMatrixAt(i, _m4); });
+  confetti.mesh.instanceMatrix.needsUpdate = true;
+  if (confetti.t > 9){ scene.remove(confetti.mesh); confetti.mesh.geometry.dispose(); confetti.mesh.material.dispose(); confetti = null; }
+}
+function buildGallery(){
+  disposeWorld();
+  const G = new THREE.Group(); scene.add(G);
+  const w = { group:G, clickables:[], arts:[], partitions:[], stops:[], videos:[], anims:[], overviewOnly:[], ceiling:[], wingStops:[], zEnd:0 };
+  const wings = effWings();
+  let z = -LOBBY; const lay = [];
+  wings.forEach((wg,i) => { const n = Math.max(1, Math.ceil(wg.works.length/2)); const L = Math.max(10, n*S + 4); lay.push({ wg, i, z0:z, z1:z-L, n, L }); z -= L; });
+  const zHall = z; z -= 12;
+  const zEnd = z; w.zEnd = zEnd; const len = -zEnd;
+
+  // floor & ceiling & walls
+  const fl = addPlane(G, W, len, M.floor.clone(), 0, 0, -len/2, 0, -Math.PI/2);
+  fl.material.map = floorTex.clone(); fl.material.map.wrapS = fl.material.map.wrapT = THREE.RepeatWrapping; fl.material.map.repeat.set(W/3.2, len/3.2); fl.material.map.needsUpdate = true;
+  fl.userData.type = 'floor'; w.clickables.push(fl);
+  addPlane(G, 90, 60, M.plaza, 0, -0.01, 30, 0, -Math.PI/2);
+  const ce = addPlane(G, W, len, M.ceil, 0, H, -len/2, 0, Math.PI/2); w.ceiling.push(ce);
+  addBox(G, 0.2, H, len, M.wall, -(HW+0.1), H/2, -len/2);
+  addBox(G, 0.2, H, len, M.wall,  (HW+0.1), H/2, -len/2);
+  addBox(G, 0.03, 0.12, len, M.base, -(HW-0.015), 0.06, -len/2);
+  addBox(G, 0.03, 0.12, len, M.base,  (HW-0.015), 0.06, -len/2);
+  doorWall(G, 0.15);
+  addBox(G, W+0.4, H, 0.2, M.wall, 0, H/2, zEnd-0.1);
+  // facade
+  const fac = addPlane(G, 7.2, 1.48, texMat(facadeCanvas()), 0, DOOR_H + 0.86, 0.31);
+  addBox(G, 7.4, 0.06, 0.25, M.strip, 0, DOOR_H+1.68, 0.42);
+  // opening plaque beside the door + ribbon
+  const op = addPlane(G, 2.3, 1.5, texMat(openingCanvas()), -(DOOR/2+1.55), 1.9, 0.31);
+  addPlane(G, 3.6, 3.6, M.wash, -(DOOR/2+1.55), 2.25, 0.305);
+  { const PX = DOOR/2 + 0.45, RZ = 0.75, RY = 1.25;
+    const gold = new THREE.MeshStandardMaterial({ color:0xc9a25e, metalness:.8, roughness:.3 });
+    const red = new THREE.MeshStandardMaterial({ color:0xc8102e, roughness:.45, metalness:.1, side:THREE.DoubleSide });
+    const parts = [];
+    for (const sx of [-1,1]){
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.045,RY+0.15,16), gold); post.position.set(sx*PX, (RY+0.15)/2, RZ); G.add(post);
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.07,16,12), gold); ball.position.set(sx*PX, RY+0.18, RZ); G.add(ball);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.18,0.05,24), gold); base.position.set(sx*PX, 0.025, RZ); G.add(base);
+      parts.push(post, ball, base);
+    }
+    const half = PX, mkHalf = sx => { const piv = new THREE.Group(); piv.position.set(sx*PX, RY, RZ); const m = new THREE.Mesh(new THREE.BoxGeometry(half, 0.13, 0.012), red); m.position.x = -sx*half/2; piv.add(m); G.add(piv); return piv; };
+    const L = mkHalf(-1), Rr = mkHalf(1);
+    const bow = new THREE.Group(); bow.position.set(0, RY, RZ+0.01);
+    for (const sx of [-1,1]){ const loop = new THREE.Mesh(new THREE.CircleGeometry(0.16, 24), red); loop.scale.set(1.25, 0.7, 1); loop.position.x = sx*0.17; loop.rotation.z = sx*0.25; bow.add(loop);
+      const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.34), red); tail.position.set(sx*0.07, -0.2, 0); tail.rotation.z = sx*0.35; bow.add(tail); }
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), red); bow.add(knot); G.add(bow);
+    parts.push(L, Rr, bow);
+    w.ribbon = { L, R:Rr, bow, parts, t: ribbonCut ? 1 : 0, cut: ribbonCut };
+    if (ribbonCut) applyRibbon(w.ribbon, 1, true);
+  }
+  // ceiling lights
+  for (let zz = -1.5; zz > zEnd+1; zz -= 3.2){
+    const s = addBox(G, 1.6, 0.04, 0.3, M.strip, 0, H-0.03, zz); w.ceiling.push(s);
+    const pl = addPlane(G, 3.4, 3.4, M.pool, 0, 0.004, zz, 0, -Math.PI/2); pl.material = M.pool;
+  }
+  for (const sx of [-1,1]){ const rail = addBox(G, 0.06, 0.05, len-0.4, M.fixture, sx*4.3, H-0.3, -len/2); w.ceiling.push(rail); }
+
+  // lobby panels
+  const PW = 6.4, PH = 3.6;
+  const ip = addPlane(G, PW, PH, texMat(infoCanvas()), -HW+0.03, 2.55, -7, Math.PI/2); ip.userData.type='info'; w.clickables.push(ip);
+  addPlane(G, PW+2.4, PH+2.8, M.wash, -HW+0.012, 2.9, -7, Math.PI/2);
+  const QW = 9.2, QH = 9.2*1248/2816;
+  const pp = addPlane(G, QW, QH, texMat(partCanvas()), HW-0.03, 2.6, -7, -Math.PI/2); pp.userData.type='parts'; w.clickables.push(pp);
+  addPlane(G, QW+2.4, QH+2.8, M.wash, HW-0.012, 2.95, -7, -Math.PI/2);
+  const dInfo = fitDist(PW, PH);
+  w.stops.push({ label:'عن المعرض', pos:new THREE.Vector3(-HW+Math.min(dInfo, 10.6), EYE, -7), yaw:Math.PI/2, pitch:Math.atan2(2.55-EYE, dInfo) });
+  const dPart = fitDist(QW, QH);
+  w.stops.push({ label:'المشاركون', pos:new THREE.Vector3(HW-Math.min(dPart,10.6), EYE, -7), yaw:-Math.PI/2, pitch:Math.atan2(2.6-EYE, dPart) });
+  w.wingStops.push({ label:'قاعة الاستقبال', idx:0 });
+  const lobLbl = addPlane(G, 7, 1.5, new THREE.MeshBasicMaterial({ map:cTex(floorLabel('الاستقبال','#d6b37c')), transparent:true, toneMapped:false, depthWrite:false }), 0, 0.03, -LOBBY/2, 0, -Math.PI/2); lobLbl.visible=false; w.overviewOnly.push(lobLbl);
+
+  // start arrow
+  const arrowMat = new THREE.MeshBasicMaterial({ map:cTex(arrowCanvas()), transparent:true, toneMapped:false, depthWrite:false });
+  const arrow = addPlane(G, 1.3, 1.62, arrowMat, 0, 0.02, -3.4, 0, -Math.PI/2); arrow.userData.type='arrow'; w.clickables.push(arrow); w.arrow = arrow;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.95,1.02,64), new THREE.MeshBasicMaterial({ color:0xf0d6a0, transparent:true, opacity:.5, toneMapped:false, depthWrite:false }));
+  ring.rotation.x = -Math.PI/2; ring.position.set(0,0.015,-3.4); G.add(ring); w.arrowRing = ring;
+
+  // wings
+  let gi = 0;
+  lay.forEach(({wg,i,z0,z1,n,L}) => {
+    const accent = ACCENTS[i % ACCENTS.length];
+    w.partitions.push(z0);
+    doorWall(G, z0);
+    const sign = addPlane(G, 5.4, 5.4*380/1400, texMat(signCanvas(wg.name, i, accent)), 0, (DOOR_H+H)/2+0.02, z0+0.155);
+    addPlane(G, 7.5, 3.4, M.wash, 0, (DOOR_H+H)/2+0.4, z0+0.152);
+    for (const sx of [-1,1]){
+      addPlane(G, 1.1, 1.1*1000/360, texMat(bannerCanvas(wg.name, i, accent)), sx*(DOOR/2+1.0), 2.15, z0+0.155);
+      addPlane(G, 2.4, 4.6, M.wash, sx*(DOOR/2+1.0), 2.6, z0+0.152);
+    }
+    const sd = 6.2;
+    w.wingStops.push({ label: wg.name, idx: w.stops.length, accent, count: wg.works.length });
+    w.stops.push({ label:'جناح '+wg.name, pos:new THREE.Vector3(0, EYE, z0+sd), yaw:0, pitch:Math.atan2((DOOR_H+H)/2-EYE, sd)*0.85 });
+    const lbl = addPlane(G, 8, 1.7, new THREE.MeshBasicMaterial({ map:cTex(floorLabel(wg.name, accent)), transparent:true, toneMapped:false, depthWrite:false }), 0, 0.03, (z0+z1)/2, 0, -Math.PI/2); lbl.visible=false; w.overviewOnly.push(lbl);
+    if (!wg.works.length){
+      const ec = mkCanvas(1600, 700), eg = ec.getContext('2d'); eg.direction='rtl'; panelBg(eg, 1600, 700, accent); eg.textAlign='center';
+      eg.fillStyle='#f6efe2'; eg.font=`700 96px ${FH}`; eg.fillText('محافظة ' + wg.name.replace(/^محافظة\s*/,''), 800, 290);
+      eg.fillStyle='#cfc6b6'; eg.font=`500 58px ${FB}`; eg.fillText('أعمال هذا الجناح تُضاف قريباً', 800, 440);
+      addPlane(G, 4.6, 2.0, texMat(ec), HW-0.03, 2.4, (z0+z1)/2, -Math.PI/2);
+      addPlane(G, 6.6, 4.6, M.wash, HW-0.012, 2.8, (z0+z1)/2, -Math.PI/2);
+    }
+    // works
+    const span = (n-1)*S, zStart = (z0+z1)/2 + span/2;
+    wg.works.forEach((wk, j) => {
+      const row = Math.floor(j/2), side = j%2===0 ? 1 : -1; // right first
+      const zz = zStart - row*S;
+      const ar = clamp(wk.ar||1, 0.3, 3.2);
+      let aw, ah; if (ar >= 2.6/2.1){ aw = 2.6; ah = aw/ar; } else { ah = 2.1; aw = ah*ar; }
+      const cy = 2.2;
+      const grp = new THREE.Group(); grp.position.set(side*(HW-0.001), 0, zz); grp.rotation.y = side>0 ? -Math.PI/2 : Math.PI/2; G.add(grp);
+      const isVid = wk.kind==='video' || wk.kind==='demovideo';
+      const pad = isVid ? 0.04 : 0.14;
+      const wash = addPlane(grp, aw+2.0, ah+3.0, M.wash, 0, cy+0.35, 0.006);
+      const fr = addBox(grp, aw+pad*2+0.08, ah+pad*2+0.08, 0.06, M.frame, 0, cy, 0.03);
+      if (!isVid) addPlane(grp, aw+pad*2, ah+pad*2, M.mat, 0, cy, 0.0615);
+      let tex, src = null;
+      if (wk.kind==='demo'){ const cv = demoArt(wk.seed, ar); tex = cTex(cv); src = { type:'canvas', canvas:cv }; }
+      else if (wk.kind==='demovideo'){ const dv = demoVideo(wk.seed); tex = cTex(dv.canvas); w.anims.push({ dv, tex, pos:new THREE.Vector3(side*HW,cy,zz) }); src = { type:'live', canvas:dv.canvas }; }
+      else if (wk.kind==='video'){
+        const v = document.createElement('video'); v.src = mediaUrl(wk.asset, 'video'); v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline',''); v.preload = 'metadata';
+        tex = new THREE.VideoTexture(v); tex.colorSpace = THREE.SRGBColorSpace; w.videos.push({ el:v, pos:new THREE.Vector3(side*HW,cy,zz), playing:false });
+        src = { type:'video', url:mediaUrl(wk.asset, 'video') };
+      } else {
+        tex = new THREE.TextureLoader().load(mediaUrl(wk.asset, 'image')); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = MAXANI;
+        src = { type:'image', url:mediaUrl(wk.asset, 'image') };
+      }
+      const img = addPlane(grp, aw, ah, new THREE.MeshBasicMaterial({ map:tex, toneMapped:false, color: isVid?0xffffff:0xf7f7f7 }), 0, cy, 0.064);
+      const pq = addPlane(grp, 0.72, 0.26, texMat(plaqueCanvas(wk, accent)), 0, cy - ah/2 - pad - 0.32, 0.012);
+      // floor pool & fixture
+      const pool = addPlane(G, 2.6, 1.8, M.pool, side*(HW-0.9), 0.006, zz, 0, -Math.PI/2);
+      const fx = new THREE.Object3D(); fx.position.set(side*4.3, H-0.42, zz); fx.lookAt(side*HW, cy+0.2, zz); G.add(fx);
+      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.085,0.26,16), M.fixture); can.rotation.x = Math.PI/2; fx.add(can);
+      const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.07,16), M.bulb); bulb.position.z = 0.131; fx.add(bulb);
+      const stem = addBox(G, 0.02, 0.12, 0.02, M.fixture, side*4.3, H-0.3, zz);
+      w.ceiling.push(fx, stem);
+      const d = fitDist(aw+pad*2, ah+pad*2+0.7);
+      const worldN = new THREE.Vector3(-side,0,0);
+      const stand = new THREE.Vector3(side*HW, EYE, zz).addScaledVector(worldN, d);
+      const art = { work:wk, wing:wg, wingIndex:i, accent, mesh:img, src, stand, yaw: side>0 ? -Math.PI/2 : Math.PI/2, pitch: Math.atan2(cy - 0.12 - EYE, d), stopIndex: w.stops.length, center:new THREE.Vector3(side*HW, cy, zz) };
+      img.userData = { type:'art', art }; fr.userData = { type:'art', art };
+      w.clickables.push(img, fr); w.arts.push(art);
+      w.stops.push({ label: wk.title, pos:stand, yaw:art.yaw, pitch:art.pitch, art });
+      gi++;
+    });
+  });
+  // final hall: opinions wall
+  w.partitions.push(zHall); doorWall(G, zHall);
+  addPlane(G, 5.4, 5.4*380/1400, texMat(signCanvas('آراء الزوار', 0, '#d6b37c', 'قاعة الختام', true)), 0, (DOOR_H+H)/2+0.02, zHall+0.155);
+  addPlane(G, 7.5, 3.4, M.wash, 0, (DOOR_H+H)/2+0.4, zHall+0.152);
+  const zc = (zHall + z)/2 + 0.3, WW = 8.2, WH = WW*1200/2400;
+  const wallTex = cTex(mkCanvas(2400,1200)); w.wallTex = wallTex;
+  const wall = addPlane(G, WW, WH, new THREE.MeshBasicMaterial({ map:wallTex, toneMapped:false }), -HW+0.03, 2.55, zc, Math.PI/2); wall.userData.type='end'; w.clickables.push(wall);
+  addPlane(G, WW+2.2, WH+2.8, M.wash, -HW+0.012, 2.9, zc, Math.PI/2);
+  const statTex = cTex(mkCanvas(1600,1000)); w.statTex = statTex;
+  const stat = addPlane(G, 4.8, 3.0, new THREE.MeshBasicMaterial({ map:statTex, toneMapped:false }), HW-0.03, 2.5, zc, -Math.PI/2); stat.userData.type='end'; w.clickables.push(stat);
+  addPlane(G, 6.6, 5.4, M.wash, HW-0.012, 2.85, zc, -Math.PI/2);
+  const dw = fitDist(WW, WH);
+  w.wingStops.push({ label:'الختام وآراء الزوار', idx: w.stops.length });
+  w.stops.push({ label:'آراء الزوار', pos:new THREE.Vector3(-HW+Math.min(dw,10.6), EYE, zc), yaw:Math.PI/2, pitch:Math.atan2(2.55-EYE, dw) });
+  // end panel
+  const ep = addPlane(G, 6, 3, texMat(endCanvas()), 0, 2.5, zEnd+0.02); ep.userData.type='end'; w.clickables.push(ep);
+  addPlane(G, 8.4, 5.6, M.wash, 0, 2.9, zEnd+0.01);
+  const de = fitDist(6, 3);
+  w.stops.push({ label:'الختام', pos:new THREE.Vector3(0, EYE, zEnd+de), yaw:0, pitch:Math.atan2(2.5-EYE, de) });
+  const elbl = addPlane(G, 7, 1.5, new THREE.MeshBasicMaterial({ map:cTex(floorLabel('الختام','#d6b37c')), transparent:true, toneMapped:false, depthWrite:false }), 0, 0.03, zEnd+3, 0, -Math.PI/2); elbl.visible=false; w.overviewOnly.push(elbl);
+
+  world = w;
+  drawWall();
+  updateTourUI();
+}
+function stars(n){ n = clamp(Math.round(n)||0,0,5); return '★'.repeat(n) + '☆'.repeat(5-n); }
+function drawWall(){
+  if (!world || !world.wallTex) return;
+  { const c = world.wallTex.image, g = c.getContext('2d'), W = c.width, H = c.height; g.direction='rtl'; panelBg(g, W, H);
+    g.textAlign='right'; const R = W-120;
+    g.fillStyle='#d6b37c'; g.font=`500 44px ${FB}`; g.fillText('ماذا قال زوار المعرض؟', R, 130);
+    g.fillStyle='#f6efe2'; g.font=`700 84px ${FH}`; g.fillText('آراء الزوار', R, 235);
+    const list = feedback.filter(f => (f.text||'').trim() || f.stars).slice(0, 6);
+    if (!list.length){ g.font=`400 50px ${FB}`; g.fillStyle='#bfb6a6'; g.fillText('كن أول من يكتب رأيه — اضغط زر «رأيك في المعرض»', R, 420); }
+    const colW = (W-300)/2, cardH = 260;
+    list.forEach((f, i) => { const col = i%2, row = Math.floor(i/2), x = R - col*(colW+60), y = 300 + row*(cardH+30);
+      g.fillStyle='rgba(255,255,255,.05)'; rr(g, x-colW, y, colW, cardH, 22); g.fill();
+      g.fillStyle='#f2c14e'; g.font=`400 40px ${FB}`; g.textAlign='left'; g.fillText(stars(f.stars), x-colW+30, y+62); g.textAlign='right';
+      g.fillStyle='#f3ece0'; g.font=`700 44px ${FH}`; let nm = String(f.name||'زائر'); while (g.measureText(nm).width > colW-300 && nm.length>3) nm = nm.slice(0,-1); g.fillText(nm, x-30, y+64);
+      g.fillStyle='#d8d0c2'; g.font=`400 38px ${FB}`; const ls = wrap(g, String(f.text||''), colW-60); ls.slice(0,3).forEach((l,k) => g.fillText(k===2 && ls.length>3 ? l.slice(0,-3)+'…' : l, x-30, y+130+k*52)); });
+    world.wallTex.needsUpdate = true; }
+  { const c = world.statTex.image, g = c.getContext('2d'), W = c.width, H = c.height; g.direction='rtl'; panelBg(g, W, H, '#7fc0b0'); g.textAlign='center';
+    const rated = feedback.filter(f => f.stars > 0), avg = rated.length ? rated.reduce((a,f)=>a+f.stars,0)/rated.length : 0;
+    g.fillStyle='#7fc0b0'; g.font=`500 50px ${FB}`; g.fillText('تقييم الزوار', W/2, 150);
+    g.fillStyle='#f6efe2'; g.font=`700 200px ${FH}`; g.fillText(rated.length ? avg.toLocaleString('ar-OM',{maximumFractionDigits:1}) : '—', W/2, 400);
+    g.fillStyle='#f2c14e'; g.font=`400 90px ${FB}`; g.fillText(stars(avg), W/2, 530);
+    g.fillStyle='#d8d0c2'; g.font=`500 56px ${FB}`; g.fillText(`${arNum(feedback.length)} رأي` + (visitors!=null ? `   •   ${arNum(visitors)} زائر` : ''), W/2, 680);
+    g.fillStyle='#bfb6a6'; g.font=`400 44px ${FB}`; g.fillText('اضغط هنا لإضافة رأيك', W/2, 850);
+    world.statTex.needsUpdate = true; }
+}
+
+/* ============ camera & movement ============ */
+const cam = { pos:new THREE.Vector3(0, 2.0, 10), yaw:0, pitch:0.05, fov:62, tfov:62, vel:new THREE.Vector3() };
+let tween = null, entered = false, stopIdx = -1, overview = null;
+function route(a, b){
+  const out = []; if (!world) return out;
+  const dir = b.z < a.z ? -1 : 1;
+  const zs = world.partitions.filter(zp => (zp-a.z)*(zp-b.z) < 0).sort((x,y) => dir<0 ? y-x : x-y);
+  for (const zp of zs){ const cx = clamp(a.x, -1.0, 1.0); out.push(new THREE.Vector3(cx, EYE, zp - dir*1.3), new THREE.Vector3(cx, EYE, zp + dir*1.3)); }
+  return out;
+}
+function goTo(pos, yaw, pitch, opts={}){
+  const a = cam.pos.clone();
+  const pts = [a, ...(opts.noRoute ? [] : route(a, pos)), pos.clone()];
+  const lens = [0]; for (let i=1;i<pts.length;i++) lens.push(lens[i-1] + pts[i].distanceTo(pts[i-1]));
+  const total = lens[lens.length-1];
+  const dur = opts.dur ?? clamp(0.5 + total/4.6, 0.7, 3.2);
+  tween = { pts, lens, total, y0:cam.yaw, y1:cam.yaw + angDiff(cam.yaw, yaw ?? cam.yaw), p0:cam.pitch, p1:pitch ?? 0, t:0, dur, done:opts.done };
+  cam.tfov = 62; hideCard();
+}
+function stepTween(dt){
+  tween.t += dt; const k = clamp(tween.t/tween.dur, 0, 1), e = ease(k), d = e*tween.total;
+  let i = 1; while (i < tween.lens.length-1 && tween.lens[i] < d) i++;
+  const seg = tween.lens[i]-tween.lens[i-1] || 1, f = clamp((d - tween.lens[i-1])/seg, 0, 1);
+  cam.pos.lerpVectors(tween.pts[i-1], tween.pts[i], tween.total ? f : 1);
+  const ek = ease(clamp(k*1.15,0,1));
+  cam.yaw = tween.y0 + (tween.y1-tween.y0)*ek; cam.pitch = tween.p0 + (tween.p1-tween.p0)*ek;
+  if (k >= 1){ const done = tween.done; tween = null; cam.vel.set(0,0,0); done && done(); }
+}
+function collide(p, prev){
+  if (!world) return;
+  p.x = clamp(p.x, -HW+0.55, HW-0.55);
+  p.z = clamp(p.z, world.zEnd+0.55, entered ? -0.6 : 40);
+  for (const zp of world.partitions){
+    if (Math.abs(p.z - zp) < 0.4 && Math.abs(p.x) > DOOR/2 - 0.35){
+      if (Math.abs(prev.z - zp) >= 0.4) p.z = prev.z; else p.x = clamp(p.x, -(DOOR/2-0.35), DOOR/2-0.35);
+    }
+  }
+}
+function goStop(i){
+  if (!world) return; const n = world.stops.length; stopIdx = (i + n) % n; const s = world.stops[stopIdx];
+  if (overview) exitOverview();
+  goTo(s.pos, s.yaw, s.pitch);
+  updateTourUI();
+}
+function updateTourUI(){
+  if (!world) return; const n = world.stops.length;
+  $('#tCount').textContent = stopIdx < 0 ? `${arNum(n)} محطة` : `${arNum(stopIdx+1)} / ${arNum(n)}`;
+  $('#tNext').firstChild.textContent = stopIdx < 0 ? 'ابدأ الجولة' : 'التالي';
+}
+
+/* ============ input ============ */
+let autoTour = false, autoT = 0;
+function setAuto(on){
+  autoTour = on; autoT = 0; $('#tAuto').classList.toggle('on', on);
+  $('#tAutoI').innerHTML = on ? '<path d="M8 5v14M16 5v14"/>' : '<path d="M7 5l12 7-12 7z"/>';
+  $('#tAutoL').textContent = on ? 'إيقاف' : 'تلقائي';
+  if (on){ if (overview) exitOverview(); showHint('جولة تلقائية على جميع الأعمال — المس الشاشة لإيقافها', 4500); if (!tween) goStop(stopIdx + 1); }
+}
+const keys = new Set(), joy = { x:0, y:0 };
+addEventListener('keydown', e => { if (e.target.closest('input,textarea,select')) return; keys.add(e.code); if (e.code==='Escape'){ closeLB(); closeModal(); } });
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
+const el = renderer.domElement, ptrs = new Map(); let drag = null, pinch = null;
+const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function pick(x, y){
+  if (!world) return null; ndc.set((x/innerWidth)*2-1, -(y/innerHeight)*2+1); raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(world.clickables, false); return hits[0] || null;
+}
+const pDist = () => { const a = [...ptrs.values()]; return Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y); };
+el.addEventListener('pointerdown', e => {
+  try{ el.setPointerCapture(e.pointerId); }catch{}
+  ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (ptrs.size === 1) drag = { x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY, moved:false };
+  else if (ptrs.size === 2){ drag = null; pinch = { d:pDist(), fov:cam.tfov, h: overview ? overview.h : 0 }; }
+});
+el.addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (pinch && ptrs.size === 2){ const r = pDist()/pinch.d; if (overview) overview.h = clamp(pinch.h/r, 5, overview.hmax*1.4); else cam.tfov = clamp(pinch.fov/r, 22, 80); return; }
+  if (drag){
+    const dx = e.clientX-drag.x, dy = e.clientY-drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    if (Math.hypot(e.clientX-drag.sx, e.clientY-drag.sy) > 6) drag.moved = true;
+    if (!drag.moved) return;
+    if (overview){
+      const sc = overview.h*2*Math.tan(THREE.MathUtils.degToRad(31))/innerHeight, y = overview.yaw;
+      const rx = Math.cos(y), rz = -Math.sin(y), ux = -Math.sin(y), uz = -Math.cos(y);
+      overview.cx -= (rx*dx - ux*dy)*sc; overview.cz -= (rz*dx - uz*dy)*sc;
+      overview.cx = clamp(overview.cx, -HW, HW); overview.cz = clamp(overview.cz, world.zEnd, 0);
+    } else {
+      const k = 0.0042 * (cam.fov/62);
+      cam.yaw += dx*k; cam.pitch = clamp(cam.pitch + dy*k, -1.15, 1.15); tween = null; hideCard(); if (autoTour) setAuto(false);
+    }
+  } else if (e.pointerType === 'mouse' && !overview) hover(e.clientX, e.clientY);
+});
+const endPtr = e => {
+  const wasTap = drag && !drag.moved && ptrs.size === 1;
+  ptrs.delete(e.pointerId);
+  if (wasTap) tap(e.clientX, e.clientY);
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size === 0) drag = null;
+};
+el.addEventListener('pointerup', endPtr); el.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); drag=null; pinch=null; });
+el.addEventListener('wheel', e => { e.preventDefault(); if (overview) overview.h = clamp(overview.h * (1 + e.deltaY*0.0012), 5, overview.hmax*1.4); else cam.tfov = clamp(cam.tfov + e.deltaY*0.03, 22, 80); }, { passive:false });
+
+const hoverRing = new THREE.Mesh(new THREE.RingGeometry(0.26,0.32,48), new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:.55, toneMapped:false, depthWrite:false }));
+hoverRing.rotation.x = -Math.PI/2; hoverRing.visible = false; scene.add(hoverRing);
+let hoverT = 0;
+function hover(x, y){
+  const now = performance.now(); if (now - hoverT < 40) return; hoverT = now;
+  const h = pick(x, y);
+  if (h && h.object.userData.type === 'floor'){ hoverRing.visible = true; hoverRing.position.set(h.point.x, 0.012, h.point.z); el.style.cursor = 'pointer'; }
+  else { hoverRing.visible = false; el.style.cursor = h ? 'pointer' : ''; }
+}
+function tap(x, y){
+  if (!entered) return;
+  if (autoTour){ setAuto(false); return; }
+  const h = pick(x, y); if (!h) return;
+  const t = h.object.userData.type;
+  if (overview){
+    if (t === 'art'){ exitOverview(); focusArt(h.object.userData.art); return; }
+    if (t === 'floor'){ const p = new THREE.Vector3(h.point.x, EYE, h.point.z); collide(p, p.clone()); exitOverview(p); }
+    return;
+  }
+  if (t === 'art'){ const a = h.object.userData.art; if (!tween && cam.pos.distanceTo(a.stand) < 0.6) openLB(a); else focusArt(a); }
+  else if (t === 'floor'){ const p = new THREE.Vector3(h.point.x, EYE, h.point.z); collide(p, cam.pos); goTo(p, cam.yaw, clamp(cam.pitch, -0.3, 0.3)); }
+  else if (t === 'arrow') goStop(0);
+  else if (t === 'info' || t === 'parts') openInfo(t === 'parts');
+  else if (t === 'end') openFeedback();
+}
+function focusArt(art){ stopIdx = art.stopIndex; updateTourUI(); goTo(art.stand, art.yaw, art.pitch); }
+
+// joystick
+const joyEl = $('#joy'), knob = joyEl.querySelector('.knob'); let joyId = null;
+joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); });
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = () => { joyId = null; joy.x = joy.y = 0; knob.style.transform = ''; };
+joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+function joyMove(e){ const r = joyEl.getBoundingClientRect(); let dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2); const m = Math.hypot(dx,dy), R = 40; if (m > R){ dx *= R/m; dy *= R/m; } knob.style.transform = `translate(${dx}px,${dy}px)`; joy.x = dx/R; joy.y = dy/R; }
+
+/* ============ overview ============ */
+function enterOverview(){
+  if (!world || overview) return;
+  flash(() => {
+    const len = -world.zEnd, vf = THREE.MathUtils.degToRad(31), hf = Math.atan(Math.tan(vf)*camera.aspect);
+    const landscape = camera.aspect > 1;
+    const along = landscape ? hf : vf, across = landscape ? vf : hf;
+    const hmax = Math.max((len*0.54)/Math.tan(along), (W*0.7)/Math.tan(across));
+    overview = { saved:{ pos:cam.pos.clone(), yaw:cam.yaw, pitch:cam.pitch }, cx:0, cz:world.zEnd/2, h:hmax, hmax, yaw: landscape ? Math.PI/2 : 0 };
+    tween = null; hideCard(); hoverRing.visible = false;
+    world.ceiling.forEach(o => o.visible = false); world.overviewOnly.forEach(o => o.visible = true);
+    you.visible = true; scene.fog.near = 400; scene.fog.far = 600;
+    $('#bMap').classList.add('on'); showHint('منظر علوي — اسحب للتحريك، كبّر وصغّر، وانقر على أي مكان للانتقال إليه', 7000);
+  });
+}
+function exitOverview(to){
+  if (!overview) return;
+  const s = overview.saved;
+  flash(() => {
+    overview = null; world.ceiling.forEach(o => o.visible = true); world.overviewOnly.forEach(o => o.visible = false);
+    you.visible = false; scene.fog.near = 38; scene.fog.far = 110;
+    cam.pos.copy(to || s.pos); cam.yaw = s.yaw; cam.pitch = to ? 0 : s.pitch; $('#bMap').classList.remove('on');
+  });
+}
+function flash(fn){ const f = $('#fade'); f.style.opacity = 1; setTimeout(() => { fn(); f.style.opacity = 0; }, 260); }
+const you = new THREE.Group();
+{ const r = new THREE.Mesh(new THREE.RingGeometry(0.5,0.68,48), new THREE.MeshBasicMaterial({ color:0xf0d6a0, toneMapped:false, depthWrite:false, transparent:true })); r.rotation.x = -Math.PI/2; you.add(r);
+  const sh = new THREE.Shape(); sh.moveTo(0,1.3); sh.lineTo(0.42,0.55); sh.lineTo(-0.42,0.55); sh.closePath();
+  const tri = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color:0xf0d6a0, toneMapped:false, side:THREE.DoubleSide })); tri.rotation.x = -Math.PI/2; you.add(tri); }
+you.visible = false; scene.add(you);
+
+/* ============ HUD ============ */
+let hintTimer;
+function showHint(t, ms=6000){ const h = $('#hint'); h.textContent = t; h.style.opacity = 1; clearTimeout(hintTimer); hintTimer = setTimeout(() => h.style.opacity = 0, ms); }
+let cardArt = null;
+function showCard(art){
+  cardArt = art; const wk = art.work;
+  const chip = $('#cChip'); chip.textContent = 'محافظة ' + art.wing.name.replace(/^محافظة\s*/, ''); chip.style.background = art.accent;
+  $('#cTitle').textContent = wk.title || 'بدون عنوان';
+  $('#cBy').textContent = [wk.artist, wk.school].filter(Boolean).join(' — ');
+  $('#cDesc').textContent = wk.desc || ''; $('#cDesc').style.display = wk.desc ? '' : 'none';
+  $('#cZoom span').textContent = (wk.kind==='video'||wk.kind==='demovideo') ? 'مشاهدة الفيديو' : 'تكبير العمل';
+  $('#card').classList.add('show');
+}
+function hideCard(){ $('#card').classList.remove('show'); }
+$('#cardX').onclick = hideCard;
+$('#cZoom').onclick = () => cardArt && openLB(cardArt);
+$('#cNext').onclick = () => goStop(stopIdx + 1);
+$('#tNext').onclick = () => goStop(stopIdx + 1);
+$('#tAuto').onclick = () => { if (!entered) return; setAuto(!autoTour); };
+$('#tPrev').onclick = () => goStop(stopIdx <= 0 ? (world ? world.stops.length-1 : 0) : stopIdx - 1);
+$('#zIn').onclick = () => { if (overview) overview.h = Math.max(5, overview.h*0.8); else cam.tfov = clamp(cam.tfov - 8, 22, 80); };
+$('#zOut').onclick = () => { if (overview) overview.h = Math.min(overview.hmax*1.4, overview.h*1.25); else cam.tfov = clamp(cam.tfov + 8, 22, 80); };
+$('#bMap').onclick = () => { if (autoTour) setAuto(false); overview ? exitOverview() : enterOverview(); };
+$('#bInfo').onclick = openInfo;
+$('#bWings').onclick = openWings;
+$('#fab').onclick = openFeedback;
+$('#bFull').onclick = async () => { try{ if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }catch{ showHint('ملء الشاشة غير متاح هنا', 2500); } };
+$('#bMusic').onclick = () => setMusic(!musicOn);
+
+/* ============ lightbox ============ */
+const lbSt = { s:1, x:0, y:0 }; let lbEl = null, lbLive = null;
+function lbApply(){ if (lbEl) lbEl.style.transform = `translate(${lbSt.x}px,${lbSt.y}px) scale(${lbSt.s})`; $('#lbStage').style.cursor = lbSt.s > 1 ? 'grab' : 'zoom-in'; }
+function lbZoom(f, cx=0, cy=0){ const ns = clamp(lbSt.s*f, 1, 8), k = ns/lbSt.s; lbSt.x = cx - (cx-lbSt.x)*k; lbSt.y = cy - (cy-lbSt.y)*k; lbSt.s = ns; if (ns === 1){ lbSt.x = lbSt.y = 0; } lbApply(); }
+function openLB(art){
+  const st = $('#lbStage'); st.innerHTML = ''; lbSt.s = 1; lbSt.x = lbSt.y = 0; lbLive = null;
+  const s = art.src;
+  if (s.type === 'image'){ lbEl = new Image(); lbEl.src = s.url; lbEl.draggable = false; }
+  else if (s.type === 'canvas'){ lbEl = new Image(); lbEl.src = s.canvas.toDataURL('image/jpeg', .92); }
+  else if (s.type === 'video'){ lbEl = document.createElement('video'); lbEl.src = s.url; lbEl.controls = true; lbEl.playsInline = true; lbEl.autoplay = true; lbEl.play().catch(()=>{}); if (musicOn) duck(true); }
+  else { lbEl = s.canvas; lbEl.style.width = 'min(94vw, 900px)'; lbLive = s.canvas; }
+  st.appendChild(lbEl); lbApply();
+  $('#lbT').textContent = art.work.title || 'بدون عنوان';
+  $('#lbS').textContent = [art.work.artist, art.work.school, 'محافظة ' + art.wing.name.replace(/^محافظة\s*/,'')].filter(Boolean).join(' — ');
+  $('#lb').classList.remove('hidden');
+}
+function closeLB(){ if ($('#lb').classList.contains('hidden')) return; if (lbEl && lbEl.tagName === 'VIDEO'){ lbEl.pause(); duck(false); } if (lbLive){ lbLive.style.width=''; lbLive.remove(); } $('#lbStage').innerHTML = ''; lbEl = null; lbLive = null; $('#lb').classList.add('hidden'); }
+$('#lbClose').onclick = closeLB;
+$('#lbIn').onclick = () => lbZoom(1.4); $('#lbOut').onclick = () => lbZoom(1/1.4); $('#lbReset').onclick = () => { lbSt.s=1; lbSt.x=lbSt.y=0; lbApply(); };
+{ const st = $('#lbStage'), lp = new Map(); let ld = null, lpin = null, lastTap = 0;
+  const rel = (x,y) => { const r = st.getBoundingClientRect(); return [x - r.left - r.width/2, y - r.top - r.height/2]; };
+  st.addEventListener('wheel', e => { e.preventDefault(); const [cx,cy] = rel(e.clientX,e.clientY); lbZoom(Math.exp(-e.deltaY*0.0016), cx, cy); }, { passive:false });
+  st.addEventListener('pointerdown', e => { if (lbEl && lbEl.tagName==='VIDEO' && lbSt.s===1) return; try{ st.setPointerCapture(e.pointerId); }catch{} lp.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if (lp.size===1){ ld = { x:e.clientX, y:e.clientY }; const now = performance.now(); if (now-lastTap < 300){ const [cx,cy] = rel(e.clientX,e.clientY); lbSt.s > 1 ? (lbSt.s=1, lbSt.x=lbSt.y=0, lbApply()) : lbZoom(2.5, cx, cy); } lastTap = now; }
+    else if (lp.size===2){ const a=[...lp.values()]; lpin = { d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), s:lbSt.s }; ld = null; } });
+  st.addEventListener('pointermove', e => { if (!lp.has(e.pointerId)) return; lp.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if (lpin && lp.size===2){ const a=[...lp.values()]; const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); lbSt.s = clamp(lpin.s*d/lpin.d, 1, 8); if (lbSt.s===1){ lbSt.x=lbSt.y=0; } lbApply(); }
+    else if (ld && lbSt.s > 1){ lbSt.x += e.clientX-ld.x; lbSt.y += e.clientY-ld.y; ld = { x:e.clientX, y:e.clientY }; lbApply(); } });
+  const up = e => { lp.delete(e.pointerId); if (lp.size<2) lpin=null; if (!lp.size) ld=null; };
+  st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+}
+
+/* ============ music ============ */
+let musicOn = false, musicEl = null, ducked = false;
+function musicSrc(){ return mediaUrl((cfg.music && cfg.music.asset) || '140a740f02a9a0c9bd9fcec238ab3792', 'audio'); }
+function ensureMusicEl(){
+  if (!musicEl){ musicEl = new Audio(); musicEl.loop = true; musicEl.preload = 'auto'; musicEl.setAttribute('playsinline',''); musicEl.volume = .6;
+    musicEl.addEventListener('pause', () => { if (musicOn && !ducked && !document.hidden) setTimeout(() => { if (musicOn && !ducked && musicEl.paused) musicEl.play().catch(()=>{}); }, 300); }); }
+  const src = musicSrc(); if (musicEl.getAttribute('src') !== src){ musicEl.src = src; }
+  return musicEl;
+}
+function setMusic(on){
+  musicOn = on; $('#bMusic').classList.toggle('on', on);
+  const m = ensureMusicEl();
+  if (on){ ducked = false; m.play().catch(() => {}); }
+  else m.pause();
+}
+function duck(d){
+  if (!musicEl || !musicOn) return; ducked = d;
+  musicEl.volume = d ? .08 : .6;
+  if (d && musicEl.volume > .5) musicEl.pause();   // iOS: volume is read-only, pause instead
+  if (!d && musicEl.paused) musicEl.play().catch(()=>{});
+}
+['pointerdown','touchend','keydown','click'].forEach(ev => document.addEventListener(ev, () => { if (musicOn && !ducked){ const m = ensureMusicEl(); if (m.paused) m.play().catch(()=>{}); } }, true));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && musicOn && !ducked && musicEl && musicEl.paused) musicEl.play().catch(()=>{}); });
+// any tap while music is meant to be on but blocked → resume
+addEventListener('pointerup', () => { if (musicOn && !ducked && musicEl && musicEl.paused) musicEl.play().catch(()=>{}); }, true);
+
+/* ============ modal ============ */
+function openModal(title, html, foot){ $('#mTitle').textContent = title; $('#mBody').innerHTML = html; const f = $('#mFoot'); if (foot){ f.innerHTML = foot; f.classList.remove('hidden'); } else f.classList.add('hidden'); $('#modal').classList.remove('hidden'); }
+function closeModal(){ $('#modal').classList.add('hidden'); modalKind = null; }
+let modalKind = null;
+$('#mClose').onclick = closeModal;
+$('#modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') closeModal(); });
+function openAdminLogin(){
+  modalKind = 'login';
+  openModal('دخول المشرفة', `<label class="l">كلمة المرور</label><input class="f" id="admPw" type="password" autocomplete="current-password"><div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="btn btn-gold" id="admGo">دخول</button><span id="admMsg"></span></div>`);
+  $('#admGo').onclick = async () => { $('#admMsg').innerHTML = '<span class="note">جاري التحقق…</span>'; if (await netLogin($('#admPw').value)){ isOwner = canEdit = true; $('#bEdit').classList.remove('hidden'); $('#admMsg').innerHTML = '<span class="ok">تم الدخول ✓ — زر القلم ظاهر الآن</span>'; if (ceremonyOn){ ceremonyOn = false; document.body.classList.remove('cer'); showCeremony(); } } else $('#admMsg').innerHTML = '<span class="err">كلمة المرور غير صحيحة</span>'; };
+}
+function openInfo(toParts){
+  modalKind = 'info';
+  const wings = effWings(); const parts = cfg.participants;
+  openModal('عن المعرض', `
+    <div style="font-family:'Noto Naskh Arabic';font-weight:700;font-size:24px">${esc(cfg.info.title)}</div>
+    ${cfg.info.subtitle ? `<div style="color:var(--gold2)">${esc(cfg.info.subtitle)}</div>` : ''}
+    <p style="white-space:pre-wrap">${esc(cfg.info.description)}</p>
+    ${cfg.info.organizer ? `<div>${esc(cfg.info.organizer)}</div>` : ''}
+    ${cfg.info.supervisor ? `<div style="color:var(--gold2)">${esc(cfg.info.supervisor)}</div>` : ''}
+    <div class="note">${esc(cfg.info.dates||'')}</div>
+    ${parts.length ? `<div class="sec-t" id="partsSec">المشاركون</div>${partGroups(parts).map(it => it.h ? `<div style="font-family:'Noto Naskh Arabic';font-weight:700;color:#e7cf9e;margin:12px 0 4px">${esc(it.text)}</div>` : `<div class="fb-item" style="margin-bottom:6px"><b>${esc(it.parts[0]||'')}</b>${it.parts.slice(1).map(x=>`<div class="note" style="color:#d6cfc2">${esc(x)}</div>`).join('')}</div>`).join('')}` : ''}
+    <div class="sec-t">أجنحة المعرض</div>
+    <ul class="plist">${wings.map((w,i)=>`<li><span style="color:${ACCENTS[i%ACCENTS.length]}">●</span> ${esc(w.name)} — ${arNum(w.works.length)} عمل</li>`).join('')}</ul>
+    <div class="sec-t">إعداد وإنشاء المعرض</div>
+    <div>أ. خديجة أحمد المعمري<br><span class="note">معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</span></div>
+    <div class="sec-t">طريقة التجوّل</div>
+    <div class="note">اسحب الشاشة للنظر حولك • انقر على الأرض للانتقال • انقر على أي عمل للاقتراب منه وعرض تفاصيله • استخدم أزرار التكبير والتصغير أو عجلة الفأرة • على الحاسوب: الأسهم أو W A S D للمشي • زر «منظر علوي» لرؤية المعرض كاملاً.</div>`);
+}
+function openWings(){
+  modalKind = 'wings'; if (!world) return;
+  openModal('أجنحة المعرض', `<div class="wlist">${world.wingStops.map((w,k)=>`<button class="btn" data-go="${w.idx}"><span><span style="color:${w.accent||'var(--gold)'}">●</span> ${esc(k>0 && k<world.wingStops.length-1 ? 'محافظة '+w.label.replace(/^محافظة\s*/,'') : w.label)}</span><span class="note">${w.count!=null ? arNum(w.count)+' عمل' : ''}</span></button>`).join('')}</div>`);
+  $('#mBody').querySelectorAll('[data-go]').forEach(b => b.onclick = () => { closeModal(); goStop(+b.dataset.go); });
+}
+
+/* ============ platform: db / user / assets ============ */
+let db = null, user = null, assets = null, myId = null, isOwner = false, canEdit = false;
+let visitors = null, feedback = [], fbState = { stars:0 };
+function netlifyCaps(){
+  const vid = (() => { try{ let v = localStorage.getItem('gallery_vid'); if (!v){ v = 'v' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('gallery_vid', v); } return v; }catch{ return 'v' + Math.random().toString(36).slice(2); } })();
+  let pw = ''; try{ pw = sessionStorage.getItem('gallery_admin') || ''; }catch{}
+  let state = { opening:{ opened:false, at:0 }, visitors:0, feedback:[] }, base = null, timer = null;
+  const subs = { main:[], visits:[], feedback:[] };
+  const api = (path, body) => fetch('/api/' + path, body ? { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(body) } : { cache:'no-store' }).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw { code: j.error || 'invalid_argument' }; return j; });
+  const emit = () => {
+    if (base) subs.main.forEach(f => f({ id:'main', exists:true, data:() => ({ ...base, opening: state.opening }) }));
+    subs.visits.forEach(f => f({ size: state.visitors, docs:[] }));
+    const docs = (state.feedback || []).map(x => ({ id:x.id, exists:true, data:() => x }));
+    subs.feedback.forEach(f => f({ docs, size:docs.length, empty:!docs.length }));
+  };
+  const poll = async () => {
+    clearTimeout(timer);
+    if (!document.hidden){ try{ state = await api('state'); emit(); }catch{} }
+    timer = setTimeout(poll, ceremonyOn || !(state.opening && state.opening.opened) ? 3000 : 20000);
+  };
+  fetch('data/gallery.json', { cache:'no-store' }).then(r => r.json()).then(j => { base = j; emit(); }).catch(() => {});
+  poll();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+  const admin = (action, extra) => api('admin', { password: pw, action, ...extra }).then(r => { poll(); return r; });
+  const doc = path => ({
+    id: path.split('/').pop(),
+    get: async () => ({ exists:false, data:() => undefined }),
+    onSnapshot(cb){ (subs[path === 'gallery/main' ? 'main' : 'x'] || []).push(cb); setTimeout(emit, 0); return () => {}; },
+    async set(d){ if (path.startsWith('visits/')) return api('visit', { id: vid }); if (path.startsWith('feedback/')){ const r = await api('feedback', { id: vid, ...d }); poll(); return r; } throw { code:'invalid_argument' }; },
+    async update(d){ if (path === 'gallery/main' && d.opening){ await admin(d.opening.opened ? 'open' : 'close'); return; } throw { code:'invalid_argument' }; },
+    async delete(){ if (path.startsWith('feedback/')) return admin('delfb', { id: path.split('/')[1] }); }
+  });
+  const collection = path => { const q = { where(){ return q; }, orderBy(){ return q; }, limit(){ return q; }, onSnapshot(cb){ (subs[path] || []).push(cb); setTimeout(emit, 0); return () => {}; }, doc: id => doc(path + '/' + id) }; return q; };
+  const isAdmin = () => !!pw;
+  const user = { id: async () => vid, isOwner: () => isAdmin(), canEdit: () => isAdmin() };
+  const login = async p => { try{ await api('admin', { password: p, action:'check' }); pw = p; try{ sessionStorage.setItem('gallery_admin', p); }catch{} return true; }catch{ return false; } };
+  return { db:{ doc, collection }, user, login };
+}
+let netLogin = null;
+async function initPlatform(){
+  const C = window.claude;
+  if (NET){
+    const caps = netlifyCaps(); netLogin = caps.login;
+    db = caps.db; user = caps.user; assets = null;
+    if (location.hash === '#admin' && !(await user.isOwner())) openAdminLogin();
+  } else if (!C || !C.use) return;
+  if (!NET){
+  try{ db = await C.use('db'); }catch{ db = null; }
+  try{ user = await C.use('user'); }catch{ user = null; }
+  try{ assets = await C.use('assets'); }catch{ assets = null; }
+  }
+  if (user){ try{ isOwner = !!(await user.isOwner()); }catch{} try{ canEdit = !!(await user.canEdit()); }catch{} try{ myId = await user.id(); }catch{} }
+  if ((isOwner || canEdit) && db) $('#bEdit').classList.remove('hidden');
+  if (!db) return;
+  try{
+    db.doc('gallery/main').onSnapshot(s => { if (s.exists) applyCfg(s.data()); }, () => {});
+  }catch{}
+  try{
+    db.collection('visits').onSnapshot(s => { visitors = s.size; renderVisitors(); drawWall(); }, () => {});
+    if (myId){ const r = db.doc('visits/' + myId); const s = await r.get(); if (!s.exists) await r.set({ t: Date.now() }); }
+  }catch{}
+  try{
+    db.collection('feedback').onSnapshot(s => { feedback = s.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.t||0)-(a.t||0)); if (modalKind === 'feedback') renderFeedbackList(); drawWall(); }, () => {});
+  }catch{}
+}
+function renderVisitors(){ if (visitors == null) return; $('#visitors').classList.remove('hidden'); $('#vCount').textContent = `${arNum(visitors)} زائر`; const m = $('#sVis'); if (m) m.textContent = `👁 زار المعرض ${arNum(visitors)} زائر`; }
+const cfgSig = c => { const { opening, ...rest } = c; return JSON.stringify(rest); };
+let cfgKey = cfgSig(cfg);
+let cfgLoaded = false;
+function applyOpening(op){
+  const was = !!(cfg.opening && cfg.opening.opened); cfg.opening = op;
+  if (op.opened && !was){ if (ceremonyOn) cutRibbon(true, true); else { ribbonCut = true; if (world && world.ribbon){ world.ribbon.cut = true; world.ribbon.t = 1; applyRibbon(world.ribbon, 1, true); } } }
+  if (!op.opened && was){ ribbonCut = false; if (world && world.ribbon){ world.ribbon.cut = false; world.ribbon.t = 0; world.ribbon.hold = 0; applyRibbon(world.ribbon, 0); } }
+  if (modalKind === 'editor' && edTab === 'info') renderEditor();
+}
+function applyCfg(d){
+  const n = normalize(d); cfgLoaded = true;
+  if (!cfg.opening) cfg.opening = { opened:false, at:0 };
+  if (n.opening.opened !== cfg.opening.opened || n.opening.at !== cfg.opening.at){ if (cfgSig(n) === cfgKey){ applyOpening(n.opening); return; } }
+  const op = n.opening, k = cfgSig(n); if (k === cfgKey){ return; }
+  n.opening = cfg.opening;
+  const musicChanged = JSON.stringify(n.music) !== JSON.stringify(cfg.music);
+  cfg = n; cfgKey = k; tween = null; hideCard();
+  buildGallery(); updateTexts();
+  if (musicChanged && musicOn){ musicEl && musicEl.pause(); setMusic(true); }
+  if (overview){ world.ceiling.forEach(o=>o.visible=false); world.overviewOnly.forEach(o=>o.visible=true); }
+  if (stopIdx >= world.stops.length) stopIdx = -1; updateTourUI();
+  if (op.opened !== cfg.opening.opened) applyOpening(op);
+}
+function updateTexts(){ $('#sOrg').textContent = cfg.info.orgShort || ''; $('#sOrg').style.display = cfg.info.orgShort ? '' : 'none'; $('#sPat').textContent = cfg.info.patron || ''; $('#sPat').style.display = cfg.info.patron ? '' : 'none'; $('#brandT').textContent = cfg.info.title; $('#sTitle').textContent = cfg.info.title; $('#sSub').textContent = cfg.info.subtitle; $('#sSup').textContent = cfg.info.supervisor || ''; $('#sSup').style.display = cfg.info.supervisor ? '' : 'none'; document.title = cfg.info.title; }
+
+/* ---- feedback ---- */
+function openFeedback(){
+  modalKind = 'feedback';
+  const mine = myId && feedback.find(f => f.id === myId);
+  fbState.stars = mine ? mine.stars : 0;
+  openModal('رأيك في المعرض', `
+    <div id="fbSum"></div>
+    <div class="sec-t">شاركينا / شاركنا رأيك</div>
+    <div class="stars" id="fbStars">${[5,4,3,2,1].map(n=>`<button data-s="${n}" aria-label="${n}">★</button>`).join('')}</div>
+    <label class="l">الاسم (اختياري)</label><input class="f" id="fbName" maxlength="40" value="${esc(mine?.name||'')}">
+    <label class="l">رأيك أو تعليقك</label><textarea class="f" id="fbText" maxlength="500" placeholder="ما الذي أعجبك في المعرض؟">${esc(mine?.text||'')}</textarea>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><button class="btn btn-gold" id="fbSend">${mine?'تحديث رأيي':'إرسال'}</button><span id="fbMsg"></span></div>
+    <div class="sec-t">آراء الزوار</div><div id="fbList"></div>`);
+  paintStars();
+  $('#fbStars').querySelectorAll('button').forEach(b => b.onclick = () => { fbState.stars = +b.dataset.s; paintStars(); });
+  $('#fbSend').onclick = sendFeedback;
+  renderFeedbackList();
+}
+function paintStars(){ $('#fbStars')?.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.s <= fbState.stars)); }
+function renderFeedbackList(){
+  const L = $('#fbList'), S = $('#fbSum'); if (!L) return;
+  const rated = feedback.filter(f => f.stars > 0), avg = rated.length ? rated.reduce((a,f)=>a+f.stars,0)/rated.length : 0;
+  S.innerHTML = `<div class="summary"><div class="big">${rated.length ? avg.toLocaleString('ar-OM',{maximumFractionDigits:1}) : '—'}</div><div><div style="color:#f2c14e;font-size:20px;letter-spacing:2px">${'★'.repeat(Math.round(avg))}<span style="color:#5a5650">${'★'.repeat(5-Math.round(avg))}</span></div><div class="note">${arNum(feedback.length)} رأي${visitors!=null ? ' • ' + arNum(visitors) + ' زائر' : ''}</div></div></div>`;
+  if (!db){ L.innerHTML = '<div class="note">آراء الزوار تظهر عند فتح المعرض من رابطه على Claude.</div>'; return; }
+  L.innerHTML = feedback.length ? feedback.map(f => `<div class="fb-item"><div class="top"><span><b style="color:var(--ink)">${esc(f.name || 'زائر')}</b> <span class="st">${'★'.repeat(clamp(f.stars|0,0,5))}</span></span><span>${f.t ? new Date(f.t).toLocaleDateString('ar-OM') : ''}${isOwner ? ` <button class="mini" style="display:inline-grid;width:26px;height:26px;vertical-align:middle" data-del="${esc(f.id)}" title="حذف"><svg class="i" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>` : ''}</span></div>${f.text ? `<p>${esc(f.text)}</p>` : ''}</div>`).join('') : '<div class="note">لا توجد آراء بعد — كن أول من يكتب رأيه!</div>';
+  L.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { try{ await db.doc('feedback/' + b.dataset.del).delete(); }catch{} });
+}
+let fbBusy = false;
+async function sendFeedback(){
+  const msg = $('#fbMsg'); if (fbBusy) return;
+  if (!db || !myId){ msg.innerHTML = '<span class="err">يلزم تسجيل الدخول إلى Claude لإرسال الرأي.</span>'; return; }
+  const text = $('#fbText').value.trim().slice(0,500), name = $('#fbName').value.trim().slice(0,40);
+  if (!fbState.stars && !text){ msg.innerHTML = '<span class="err">اختر عدد النجوم أو اكتب تعليقاً.</span>'; return; }
+  fbBusy = true; msg.innerHTML = '<span class="note">جاري الإرسال…</span>';
+  try{ await db.doc('feedback/' + myId).set({ name, text, stars: fbState.stars, t: Date.now() }); msg.innerHTML = '<span class="ok">شكراً لك! تم حفظ رأيك ✓</span>'; $('#fbSend').textContent = 'تحديث رأيي'; }
+  catch(e){ msg.innerHTML = '<span class="err">تعذّر حفظ رأيك: صلاحية المشاركة غير مفعّلة لهذا الحساب.</span>'; }
+  fbBusy = false;
+}
+
+/* ---- editor ---- */
+let draft = null, edTab = 'info', edBusy = false;
+const ICON = { up:'<path d="M12 19V5M6 11l6-6 6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>', del:'<path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>' };
+const ic = k => `<svg class="i" viewBox="0 0 24 24">${ICON[k]}</svg>`;
+$('#bEdit').onclick = () => { draft = JSON.parse(JSON.stringify(cfg)); edTab = 'info'; modalKind = 'editor'; openModal('تحرير المعرض', '', `<span id="edStatus" class="note">التغييرات لا تظهر للزوار حتى تضغطي «حفظ ونشر».</span><button class="btn btn-gold" id="edSave">حفظ ونشر</button>`); renderEditor(); $('#edSave').onclick = saveDraft; };
+function renderEditor(){
+  const d = draft, B = $('#mBody');
+  if (NET){
+    const f = $('#mFoot'); if (f) f.classList.add('hidden');
+    B.innerHTML = `<div class="wing"><div class="sec-t" style="margin-top:0">✂ حفل التدشين (قصّ الشريط)</div>
+      <div>${(cfg.opening && cfg.opening.opened) ? `<span class="ok">المعرض مفتوح للزوار${cfg.opening.at ? ' منذ ' + esc(new Date(cfg.opening.at).toLocaleString('ar-OM')) : ''}</span>` : '<span class="err">المعرض مغلق بالشريط — الزوار ينتظرون عند الباب حتى قصّ الشريط</span>'}</div>
+      <div class="note" style="margin:6px 0">وقت الحفل: اضغطي «الدخول إلى المعرض» ثم «قصّ الشريط» عند الباب، فيُفتتح المعرض للجميع.</div>
+      <div class="upl"><button class="btn" data-op="close">🔒 إغلاق المعرض حتى حفل التدشين</button><button class="btn" data-op="open">🔓 افتتاح الآن بدون حفل</button></div></div>
+      <div class="note">يمكنك حذف أي رأي غير مناسب من نافذة «رأيك في المعرض» (أيقونة السلة). لتعديل الأعمال أو المعلومات أرسليها في محادثة Claude.</div><div id="edStatus" class="note"></div>`;
+    B.querySelectorAll('[data-op]').forEach(b => b.onclick = async () => { const opened = b.dataset.op === 'open', op = { opened, at: opened ? Date.now() : 0 }; try{ await db.doc('gallery/main').update({ opening: op }); applyOpening(op); edStatus(opened ? 'تم فتح المعرض ✓' : 'تم إغلاق المعرض حتى حفل التدشين ✓', 'ok'); }catch(e){ edStatus('تعذّر التغيير، حاولي مرة أخرى', 'err'); } });
+    return;
+  }
+  const tabs = `<div class="tabs">${[['info','معلومات المعرض'],['wings','الأجنحة والأعمال'],['music','الموسيقى']].map(([k,t])=>`<button data-tab="${k}" class="${edTab===k?'on':''}">${t}</button>`).join('')}</div>`;
+  let body = '';
+  if (edTab === 'info'){
+    body = `
+      <label class="l">اسم المعرض</label><input class="f" data-b="info.title" value="${esc(d.info.title)}">
+      <label class="l">العنوان الفرعي</label><input class="f" data-b="info.subtitle" value="${esc(d.info.subtitle)}">
+      <label class="l">نبذة عن المعرض</label><textarea class="f" data-b="info.description" rows="5">${esc(d.info.description)}</textarea>
+      <label class="l">التاريخ</label><input class="f" data-b="info.dates" value="${esc(d.info.dates)}">
+      <label class="l">الجهة المنظمة</label><input class="f" data-b="info.organizer" value="${esc(d.info.organizer)}">
+      <label class="l">الإشراف</label><input class="f" data-b="info.supervisor" value="${esc(d.info.supervisor||'')}">
+      <div class="wing" style="margin-top:6px"><div class="sec-t" style="margin-top:0">✂ حفل التدشين (قصّ الشريط)</div>
+        <div>${(cfg.opening && cfg.opening.opened) ? `<span class="ok">المعرض مفتوح للزوار${cfg.opening.at ? ' منذ ' + esc(new Date(cfg.opening.at).toLocaleString('ar-OM')) : ''}</span>` : '<span class="err">المعرض مغلق بالشريط — الزوار ينتظرون عند الباب حتى قصّ الشريط</span>'}</div>
+        <div class="note" style="margin:6px 0">وقت الحفل: افتحي المعرض من حسابك على الشاشة، اضغطي «الدخول إلى المعرض» ثم «قصّ الشريط»، فيُفتتح المعرض للجميع فوراً.</div>
+        <div class="upl"><button class="btn" data-op="close">🔒 إغلاق المعرض حتى حفل التدشين</button><button class="btn" data-op="open">🔓 افتتاح الآن بدون حفل</button></div></div>
+      <label class="l">الجهة المنظمة (سطر كبير في شاشة الدخول)</label><input class="f" data-b="info.orgShort" value="${esc(d.info.orgShort||'')}">
+      <label class="l">حفل التدشين — من يفتتح المعرض (مثال: برعاية سعادة …)</label><input class="f" data-b="info.patron" value="${esc(d.info.patron||'')}">
+      <label class="l">تاريخ التدشين</label><input class="f" data-b="info.openingDate" value="${esc(d.info.openingDate||'')}">
+      <label class="l">المشاركون — سطر يبدأ بـ ## عنوان مجموعة (مثل اسم المحافظة)، وفي كل سطر: المدرسة | المعلمة | الطالبات</label><textarea class="f" data-b="participants" rows="7">${esc(d.participants.join('\n'))}</textarea>
+      <div class="note" style="margin-top:8px">إذا تُركت قائمة المشاركين فارغة، تُعرض أسماء صاحبات الأعمال تلقائياً.</div>`;
+  } else if (edTab === 'wings'){
+    if (!assets) body += `<div class="err" style="margin-bottom:8px">رفع الملفات متاح لصاحبة المعرض فقط عند فتحه من رابطه على Claude.</div>`;
+    body += `<div class="note" style="margin-bottom:10px">كل جناح يمثّل محافظة، واسمها يظهر فوق مدخل الجناح وبجانبه. ارفعي الصور (JPG/PNG) أو الفيديو (MP4/WebM حتى ٢٠ ميجابايت). ${d.wings.length ? '' : 'المعرض يعرض حالياً أعمالاً تجريبية حتى تضيفي أول جناح.'}</div>`;
+    body += d.wings.map((w,i) => `
+      <div class="wing">
+        <div class="wing-h"><span style="color:${ACCENTS[i%ACCENTS.length]};font-size:20px">●</span>
+          <input class="f" list="govs" data-b="wings.${i}.name" value="${esc(w.name)}" placeholder="اسم المحافظة">
+          <button class="mini" data-a="wup" data-i="${i}" title="أعلى">${ic('up')}</button><button class="mini" data-a="wdown" data-i="${i}" title="أسفل">${ic('down')}</button><button class="mini" data-a="wdel" data-i="${i}" title="حذف الجناح">${ic('del')}</button></div>
+        <div class="works">${w.works.map((x,j) => `
+          <div class="work">
+            ${x.kind==='video' ? `<video class="th" src="/_blob/${esc(x.asset)}" muted preload="metadata"></video>` : `<img class="th" src="/_blob/${esc(x.asset)}" alt="">`}
+            <div class="fs">
+              <input class="f" data-b="wings.${i}.works.${j}.title" value="${esc(x.title)}" placeholder="عنوان العمل">
+              <input class="f" data-b="wings.${i}.works.${j}.artist" value="${esc(x.artist)}" placeholder="اسم الفنانة / الطالبة">
+              <input class="f" data-b="wings.${i}.works.${j}.school" value="${esc(x.school)}" placeholder="المدرسة / الصف">
+              <textarea class="f" data-b="wings.${i}.works.${j}.desc" placeholder="وصف قصير للعمل (اختياري)">${esc(x.desc)}</textarea>
+            </div>
+            <div class="ctl"><button class="mini" data-a="up" data-i="${i}" data-j="${j}">${ic('up')}</button><button class="mini" data-a="down" data-i="${i}" data-j="${j}">${ic('down')}</button><button class="mini" data-a="del" data-i="${i}" data-j="${j}">${ic('del')}</button></div>
+          </div>`).join('')}</div>
+        <div class="upl"><label class="btn" ${assets?'':'style="opacity:.5;pointer-events:none"'}>➕ إضافة صور أو فيديو<input type="file" multiple accept="image/*,video/mp4,video/webm" data-up="${i}" hidden></label><span class="note">${arNum(w.works.length)} عمل</span></div>
+      </div>`).join('');
+    body += `<button class="btn btn-gold" data-a="wadd">➕ إضافة جناح محافظة</button><datalist id="govs">${GOVS.map(g=>`<option value="${g}">`).join('')}</datalist>`;
+  } else {
+    body = `<div class="note">افتراضياً يعمل في المعرض لحن هادئ يتم توليده تلقائياً. يمكنك بدلاً من ذلك رفع مقطع موسيقي بصيغة M4A أو MP4 أو WebM (حتى ٢٠ ميجابايت).</div>
+      <div style="margin-top:12px">${d.music ? `<div class="ok">✓ تم اختيار ملف موسيقى مخصّص.</div><audio controls src="/_blob/${esc(d.music.asset)}" style="width:100%;margin-top:8px"></audio><button class="btn" style="margin-top:8px" data-a="mdel">العودة إلى اللحن الهادئ الافتراضي</button>` : `<div>الحالي: اللحن الهادئ الافتراضي</div>`}</div>
+      <div class="upl"><label class="btn" ${assets?'':'style="opacity:.5;pointer-events:none"'}>🎵 رفع ملف موسيقى<input type="file" accept=".m4a,.mp4,.webm,audio/mp4,audio/x-m4a,audio/webm,video/mp4,video/webm" data-music hidden></label></div>`;
+  }
+  B.innerHTML = tabs + body;
+  B.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { edTab = b.dataset.tab; renderEditor(); });
+  B.querySelectorAll('[data-b]').forEach(inp => inp.oninput = () => setPath(inp.dataset.b, inp.value));
+  B.querySelectorAll('[data-a]').forEach(b => b.onclick = () => edAction(b.dataset.a, +b.dataset.i, +b.dataset.j));
+  B.querySelectorAll('[data-op]').forEach(b => b.onclick = async () => { const opened = b.dataset.op === 'open', op = { opened, at: opened ? Date.now() : 0 }; try{ await db.doc('gallery/main').update({ opening: op }); applyOpening(op); edStatus(opened ? 'تم فتح المعرض ✓' : 'تم إغلاق المعرض حتى حفل التدشين ✓', 'ok'); }catch(e){ edStatus('تعذّر التغيير، حاولي مرة أخرى', 'err'); } });
+  B.querySelectorAll('[data-up]').forEach(inp => inp.onchange = () => uploadWorks(+inp.dataset.up, [...inp.files]));
+  const mi = B.querySelector('[data-music]'); if (mi) mi.onchange = () => uploadMusic(mi.files[0]);
+}
+function setPath(p, v){
+  if (p === 'participants'){ draft.participants = v.split('\n').map(s=>s.trim()).filter(Boolean); return; }
+  const parts = p.split('.'); let o = draft; for (let i=0;i<parts.length-1;i++) o = o[parts[i]]; o[parts[parts.length-1]] = v;
+}
+function edAction(a, i, j){
+  const ws = draft.wings, sw = (arr, x, y) => { if (y<0 || y>=arr.length) return; [arr[x],arr[y]] = [arr[y],arr[x]]; };
+  if (a === 'wadd'){ const used = new Set(ws.map(w=>w.name)); ws.push({ id:rid(), name: GOVS.find(g=>!used.has(g)) || 'جناح جديد', works:[] }); }
+  else if (a === 'wup') sw(ws, i, i-1); else if (a === 'wdown') sw(ws, i, i+1);
+  else if (a === 'wdel') ws.splice(i,1);
+  else if (a === 'up') sw(ws[i].works, j, j-1); else if (a === 'down') sw(ws[i].works, j, j+1);
+  else if (a === 'del') ws[i].works.splice(j,1);
+  else if (a === 'mdel') draft.music = null;
+  renderEditor();
+}
+const edStatus = (t, cls='note') => { const s = $('#edStatus'); if (s){ s.className = cls; s.textContent = t; } };
+async function prepImage(file){
+  let bmp; try{ bmp = await createImageBitmap(file); }catch{ throw new Error('decode'); }
+  const w0 = bmp.width, h0 = bmp.height, ar = w0/h0, MAX = 2560;
+  const okType = ['image/jpeg','image/png','image/webp','image/gif'].includes(file.type);
+  if (okType && Math.max(w0,h0) <= MAX && file.size <= 6e6) return { blob:file, type:file.type, ar };
+  const s = Math.min(1, MAX/Math.max(w0,h0)), c = mkCanvas(Math.round(w0*s), Math.round(h0*s)); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); return { blob, type:'image/jpeg', ar };
+}
+function videoAR(file){ return new Promise(res => { const v = document.createElement('video'); v.preload='metadata'; v.muted = true; v.src = URL.createObjectURL(file); v.onloadedmetadata = () => { res(v.videoWidth && v.videoHeight ? v.videoWidth/v.videoHeight : 16/9); URL.revokeObjectURL(v.src); }; v.onerror = () => res(16/9); }); }
+const upErr = e => ({ too_large:'الملف أكبر من ٢٠ ميجابايت', unsupported_type:'صيغة الملف غير مدعومة', quota_or_state:'امتلأت مساحة التخزين', rate_limited:'محاولات كثيرة، انتظري قليلاً' }[e && e.code] || 'تعذّر الرفع');
+async function uploadWorks(wi, files){
+  if (!assets || edBusy || !files.length) return; edBusy = true; let ok = 0; const errs = [];
+  for (let k=0;k<files.length;k++){
+    const f = files[k]; edStatus(`جاري رفع ${arNum(k+1)} من ${arNum(files.length)}…`);
+    try{
+      let r, kind, ar;
+      if (f.type.startsWith('video/')){
+        if (f.size > 20*1024*1024) throw { code:'too_large' };
+        const type = f.type === 'video/webm' ? 'video/webm' : 'video/mp4'; ar = await videoAR(f); r = await assets.upload(f, { type }); kind = 'video';
+      } else { const p = await prepImage(f); ar = p.ar; r = await assets.upload(p.blob, { type:p.type }); kind = 'image'; }
+      draft.wings[wi].works.push({ id:rid(), kind, asset:r.id, ar:+ar.toFixed(4), title:f.name.replace(/\.[^.]+$/,''), artist:'', school:'', desc:'' }); ok++;
+    }catch(e){ errs.push(f.name + ': ' + (e && e.message==='decode' ? 'تعذّرت قراءة الصورة' : upErr(e))); }
+  }
+  edBusy = false; renderEditor();
+  edStatus(errs.length ? `تم رفع ${arNum(ok)} • ${errs.join(' — ')}` : `تم رفع ${arNum(ok)} ملف ✓ — لا تنسي «حفظ ونشر»`, errs.length ? 'err' : 'ok');
+}
+async function uploadMusic(f){
+  if (!assets || !f || edBusy) return; edBusy = true; edStatus('جاري رفع الموسيقى…');
+  try{ const type = /webm/.test(f.type) || /\.webm$/i.test(f.name) ? 'video/webm' : 'video/mp4'; if (f.size > 20*1024*1024) throw { code:'too_large' }; const r = await assets.upload(f, { type }); draft.music = { asset:r.id }; renderEditor(); edStatus('تم رفع الموسيقى ✓ — لا تنسي «حفظ ونشر»', 'ok'); }
+  catch(e){ edStatus(upErr(e), 'err'); }
+  edBusy = false;
+}
+async function saveDraft(){
+  if (!db || edBusy) return; edBusy = true; edStatus('جاري الحفظ…');
+  try{ draft.opening = cfg.opening || { opened:false, at:0 }; await db.doc('gallery/main').set(JSON.parse(JSON.stringify(draft))); applyCfg(draft); edStatus('تم الحفظ والنشر ✓', 'ok'); }
+  catch(e){ edStatus(e && e.code==='quota_exceeded' ? 'تجاوزتِ حدّ التخزين' : 'تعذّر الحفظ، حاولي مرة أخرى', 'err'); }
+  edBusy = false;
+}
+
+/* ============ loop ============ */
+const clock = new THREE.Clock(); let vidT = 0, el_t = 0;
+const tmpPrev = new THREE.Vector3();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05); el_t += dt;
+  if (overview){
+    camera.position.set(overview.cx, overview.h, overview.cz); camera.rotation.set(-Math.PI/2+0.0001, overview.yaw, 0);
+    camera.fov += (62 - camera.fov)*0.2; camera.updateProjectionMatrix();
+    you.position.set(overview.saved.pos.x, 0.05, overview.saved.pos.z); you.rotation.y = overview.saved.yaw; you.scale.setScalar(clamp(overview.h/22, 0.8, 2.2));
+  } else {
+    if (tween) stepTween(dt);
+    else if (entered){
+      const f = ((keys.has('KeyW')||keys.has('ArrowUp'))?1:0) - ((keys.has('KeyS')||keys.has('ArrowDown'))?1:0) - joy.y;
+      const s = (keys.has('KeyD')?1:0) - (keys.has('KeyA')?1:0) + joy.x;
+      const turn = (keys.has('ArrowLeft')||keys.has('KeyQ')?1:0) - (keys.has('ArrowRight')||keys.has('KeyE')?1:0);
+      if (f || s || turn){ hideCard(); if (autoTour) setAuto(false); }
+      cam.yaw += turn*1.7*dt;
+      const sp = keys.has('ShiftLeft')||keys.has('ShiftRight') ? 5.5 : 3.0;
+      const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+      const tv = new THREE.Vector3(fx*f + rx*s, 0, fz*f + rz*s); if (tv.lengthSq() > 1) tv.normalize(); tv.multiplyScalar(sp);
+      cam.vel.lerp(tv, 1 - Math.exp(-10*dt));
+      tmpPrev.copy(cam.pos); cam.pos.addScaledVector(cam.vel, dt); cam.pos.y += (EYE - cam.pos.y)*Math.min(1, dt*4); collide(cam.pos, tmpPrev);
+    }
+    cam.fov += (cam.tfov - cam.fov) * (1 - Math.exp(-8*dt));
+    camera.fov = cam.fov; camera.updateProjectionMatrix();
+    camera.position.copy(cam.pos); camera.rotation.set(cam.pitch, cam.yaw, 0);
+    if (!started){ cam.yaw = Math.sin(el_t*0.25)*0.12; }
+  }
+  stepConfetti(dt);
+  if (world && world.ribbon && world.ribbon.cut && !world.ribbon.hidden){ if (world.ribbon.t < 1){ world.ribbon.t = Math.min(1, world.ribbon.t + dt/1.3); applyRibbon(world.ribbon, world.ribbon.t); } else { world.ribbon.hold = (world.ribbon.hold||0) + dt; if (world.ribbon.hold > 1.6) setRibbonVisible(world.ribbon, false); } }
+  if (autoTour && !tween && !overview && entered && $('#lb').classList.contains('hidden') && $('#modal').classList.contains('hidden')){
+    autoT += dt; const st = world && world.stops[stopIdx]; const dwell = !st ? 0.3 : st.art ? ((st.art.work.kind==='video') ? 9 : 3.5) : 2.5;
+    if (autoT > dwell){ autoT = 0; if (stopIdx >= world.stops.length-1) setAuto(false); else goStop(stopIdx+1); }
+  }
+  if (world){
+    if (world.arrow){ const p = 0.6 + 0.4*Math.sin(el_t*3); world.arrow.material.opacity = 0.55 + 0.45*p; world.arrow.position.z = -3.4 - Math.sin(el_t*3)*0.12; world.arrowRing.scale.setScalar(1 + ((el_t*0.6)%1)*0.5); world.arrowRing.material.opacity = 0.6*(1-((el_t*0.6)%1)); }
+    const cp = overview ? null : camera.position;
+    for (const a of world.anims){ if (overview || cp.distanceTo(a.pos) < 16 || lbLive === a.dv.canvas){ a.dv.draw(el_t); a.tex.needsUpdate = true; } }
+    vidT += dt;
+    if (vidT > 0.4){ vidT = 0; for (const v of world.videos){ const near = overview || cp.distanceTo(v.pos) < 11; if (near && !v.playing){ v.playing = true; v.el.play().catch(()=>{ v.playing = false; }); } else if (!near && v.playing){ v.playing = false; v.el.pause(); } } }
+  }
+  renderer.render(scene, camera);
+}
+addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+/* ============ boot ============ */
+async function boot(){
+  try{ await Promise.race([Promise.all([document.fonts.load(`700 64px "Noto Naskh Arabic"`), document.fonts.load(`500 40px "Noto Naskh Arabic"`), document.fonts.load(`400 40px "Noto Naskh Arabic"`)]), new Promise(r=>setTimeout(r,4000))]); }catch{}
+  updateTexts(); buildGallery();
+  setMusic(true);
+  cam.pos.set(0, 2.0, 10.5); cam.pitch = 0.06;
+  frame();
+  const btn = $('#enter'); btn.disabled = false; btn.textContent = 'الدخول إلى المعرض ←';
+  const meta = $('#sMeta'); meta.insertAdjacentHTML('beforeend', '<div id="sVis"></div>'); renderVisitors();
+  btn.onclick = () => {
+    $('#splash').style.opacity = 0; setTimeout(() => $('#splash').remove(), 900);
+    setMusic(true); started = true;
+    goTo(new THREE.Vector3(0, 1.7, 5.6), 0, 0.1, { dur:2.6, noRoute:true, done: arriveAtDoor });
+  };
+  $('#cerCut').onclick = () => cutRibbon(true);
+  $('#cerSkip').onclick = () => cutRibbon(false);
+  initPlatform();
+}
+function arriveAtDoor(){
+  if (db && !cfgLoaded && (arriveAtDoor.n = (arriveAtDoor.n||0)+1) < 15){ setTimeout(arriveAtDoor, 400); return; }
+  if (ribbonCut || (cfg.opening && cfg.opening.opened)){ ribbonCut = true; if (world && world.ribbon){ world.ribbon.cut = true; world.ribbon.t = 1; applyRibbon(world.ribbon, 1, true); } walkIn(); }
+  else showCeremony();
+}
+const gated = () => !!(db && cfgLoaded && !(cfg.opening && cfg.opening.opened));
+function showCeremony(){
+  ceremonyOn = true; document.body.classList.add('cer');
+  const g = gated();
+  $('#cerCut').style.display = (!g || canEdit || isOwner) ? '' : 'none';
+  $('#cerSkip').style.display = (!g || canEdit || isOwner) ? '' : 'none';
+  $('#cerSkip').textContent = g ? 'معاينة دون افتتاح' : 'تخطّي';
+  $('#cerWait').style.display = (g && !(canEdit || isOwner)) ? '' : 'none';
+  $('#cerAdm').style.display = (g && (canEdit || isOwner)) ? '' : 'none';
+  $('#cerT').textContent = cfg.info.title; $('#cer .k').textContent = (cfg.info.orgShort ? cfg.info.orgShort + ' — ' : '') + 'حفل تدشين المعرض';
+  $('#cerP').textContent = cfg.info.patron || ''; $('#cerS').textContent = cfg.info.supervisor || '';
+  $('#cerD').textContent = cfg.info.openingDate || cfg.info.dates || '';
+  const c = $('#cer'); c.style.opacity = 0; c.classList.remove('hidden'); requestAnimationFrame(() => c.style.opacity = 1);
+}
+function cutRibbon(celebrate, remote){
+  if (!ceremonyOn) return;
+  if (gated() && !remote){
+    if (!(canEdit || isOwner)) return;
+    if (celebrate){ const at = Date.now(); cfg.opening = { opened:true, at }; db.doc('gallery/main').update({ opening:{ opened:true, at } }).catch(() => showHint('تعذّر حفظ الافتتاح — تأكدي من الاتصال', 4000)); }
+  }
+  ceremonyOn = false; ribbonCut = true; document.body.classList.remove('cer');
+  const c = $('#cer'); c.style.opacity = 0; setTimeout(() => c.classList.add('hidden'), 500);
+  if (world && world.ribbon){ world.ribbon.cut = true; world.ribbon.hold = 0; if (!celebrate){ world.ribbon.t = 1; applyRibbon(world.ribbon, 1, true); } }
+  if (celebrate){
+    burstConfetti();
+    $('#openedS').textContent = cfg.info.patron || cfg.info.title;
+    const o = $('#opened'); o.classList.add('show'); setTimeout(() => o.classList.remove('show'), 3200);
+    setTimeout(walkIn, 2600);
+  } else walkIn();
+}
+function walkIn(){
+  goTo(new THREE.Vector3(0, EYE, -1.6), 0, -0.08, { dur:3.2, noRoute:true, done: () => { entered = true; showHint('اسحب للنظر • انقر على الأرض للتنقل • انقر على العمل لعرضه • أو اضغط «تلقائي» لجولة كاملة', 7000); } });
+}
+boot();
+</script>
+</body>
+</html>
