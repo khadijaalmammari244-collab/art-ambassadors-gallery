@@ -206,7 +206,7 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
   </div>
 </div>
 
-<div id="credit">إعداد وإنشاء المعرض: <b>أ. خديجة أحمد المعمري</b> — معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
+<div id="credit">إعداد وتنظيم المعرض: <b>أ. خديجة المعمري</b> — معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
 
 <div id="splash">
   <div class="box">
@@ -219,7 +219,7 @@ label.l{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
     <div class="rule"></div>
     <button class="btn btn-gold" id="enter" disabled>جاري تجهيز المعرض…</button>
     <div class="meta" id="sMeta">🎧 يُفضّل استخدام السماعات · اسحب للنظر حولك · انقر على الأرض للتنقل · انقر على العمل لعرضه</div>
-    <div class="cred">إعداد وإنشاء المعرض: <b>أ. خديجة أحمد المعمري</b><br>معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
+    <div class="cred">إعداد وتنظيم المعرض: <b>أ. خديجة المعمري</b><br>معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</div>
   </div>
 </div>
 
@@ -262,7 +262,7 @@ const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 
 const NET = !!window.__NETLIFY__;
 const mediaUrl = (id, kind) => NET ? `media/${id}.${kind === 'image' ? 'jpg' : 'mp4'}` : '/_blob/' + id;
-const CREDIT_1 = 'إعداد وإنشاء المعرض: أ. خديجة أحمد المعمري';
+const CREDIT_1 = 'إعداد وتنظيم المعرض: أ. خديجة المعمري';
 const CREDIT_2 = 'معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)';
 const GOVS = ['مسقط','ظفار','مسندم','البريمي','الداخلية','شمال الباطنة','جنوب الباطنة','جنوب الشرقية','شمال الشرقية','الظاهرة','الوسطى'];
 const ACCENTS = ['#d6b37c','#7fc0b0','#d98f6c','#8fa8dc','#c39ad6','#d8c26c','#8fcf8a','#e08aa3','#6cc3d9','#c9a98a','#a3a3e0'];
@@ -1071,7 +1071,7 @@ function openInfo(toParts){
     ${parts.length ? `<div class="sec-t" id="partsSec">المشاركون</div>${partGroups(parts).map(it => it.h ? `<div style="font-family:'Noto Naskh Arabic';font-weight:700;color:#e7cf9e;margin:12px 0 4px">${esc(it.text)}</div>` : `<div class="fb-item" style="margin-bottom:6px"><b>${esc(it.parts[0]||'')}</b>${it.parts.slice(1).map(x=>`<div class="note" style="color:#d6cfc2">${esc(x)}</div>`).join('')}</div>`).join('')}` : ''}
     <div class="sec-t">أجنحة المعرض</div>
     <ul class="plist">${wings.map((w,i)=>`<li><span style="color:${ACCENTS[i%ACCENTS.length]}">●</span> ${esc(w.name)} — ${arNum(w.works.length)} عمل</li>`).join('')}</ul>
-    <div class="sec-t">إعداد وإنشاء المعرض</div>
+    <div class="sec-t">إعداد وتنظيم المعرض</div>
     <div>أ. خديجة أحمد المعمري<br><span class="note">معلمة فنون تشكيلية بمدرسة تبوك للبنات (٥-١٢)</span></div>
     <div class="sec-t">طريقة التجوّل</div>
     <div class="note">اسحب الشاشة للنظر حولك • انقر على الأرض للانتقال • انقر على أي عمل للاقتراب منه وعرض تفاصيله • استخدم أزرار التكبير والتصغير أو عجلة الفأرة • على الحاسوب: الأسهم أو W A S D للمشي • زر «منظر علوي» لرؤية المعرض كاملاً.</div>`);
